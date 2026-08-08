@@ -466,12 +466,12 @@ const TIME_BLOCK_CATS = [
   {k:'followup', ic:'📱', label:'Follow-up', c:'#F2A93B'},
   {k:'training', ic:'🎓', label:'Training', c:'#6FCF97'},
 ];
-const FUNNEL_LABELS = ['Lead','Contact','Qualified','Meeting','Proposal','Closing'];
+const FUNNEL_LABELS = ['Lead','Contact','Meeting','Proposal','Closing'];
 const FUNNEL_PRESETS = [
-  {name:'مثال 1 — انهيار في الإقفال', stages:[300,250,110,100,95,10]},
-  {name:'مثال 2 — تسريب مبكر جدًا', stages:[400,150,130,120,110,90]},
-  {name:'مثال 3 — فجوة التأهيل', stages:[350,320,80,70,65,20]},
-  {name:'ابدأ فاضي', stages:[0,0,0,0,0,0]},
+  {name:'مثال 1 — انهيار في الإقفال', stages:[300,250,100,95,10]},
+  {name:'مثال 2 — تسريب مبكر جدًا', stages:[400,150,120,110,90]},
+  {name:'مثال 3 — فجوة التأهيل', stages:[350,320,70,65,20]},
+  {name:'ابدأ فاضي', stages:[0,0,0,0,0]},
 ];
 const CLASSIFY_CARDS = [
   {q:'"قال كلمني بعد أسبوع."', a:'warm', tip:'حدد ميعاد دقيق وابعت تذكير قبلها بيوم.'},
@@ -1228,7 +1228,7 @@ function attachHandlers(){
     setEph('funnelStages',[...p.stages]); setEph('funnelRevealed',false); setEph('funnelGuesses',{}); render();
   });
   const funnelClear=document.getElementById('funnelClear');
-  if(funnelClear) funnelClear.onclick=()=>{ setEph('funnelStages',[0,0,0,0,0,0]); setEph('funnelRevealed',false); setEph('funnelGuesses',{}); render(); };
+  if(funnelClear) funnelClear.onclick=()=>{ setEph('funnelStages',[0,0,0,0,0]); setEph('funnelRevealed',false); setEph('funnelGuesses',{}); render(); };
   const funnelEditToggle=document.getElementById('funnelEditToggle');
   if(funnelEditToggle) funnelEditToggle.onclick=()=>{ setEph('funnelEditMode', !eph('funnelEditMode')); render(); };
 
