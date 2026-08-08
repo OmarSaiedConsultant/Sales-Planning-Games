@@ -191,6 +191,9 @@ button{font-family:inherit; cursor:pointer; border:none;}
   font-family:'Cairo'; font-weight:800; font-size:13px; text-align:center; border-radius:7px; padding:4px 2px;
 }
 .funnel-input:focus{outline:none; border-color:var(--gold);}
+.funnel-value{font-family:'Cairo'; font-weight:800; font-size:14px; color:var(--gold); min-width:32px; display:inline-block; text-align:center;}
+.facilitator-zone{background:rgba(62,124,177,.08); border:1px dashed var(--blue); border-radius:10px; padding:10px 12px; margin-bottom:14px;}
+.facilitator-only-btn{border-color:var(--blue); color:var(--blue);}
 .vote-options{display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin:16px 0;}
 .vote-opt{
   background:var(--panel2); border:1px solid var(--border); border-radius:10px; padding:12px; text-align:center;
@@ -793,6 +796,7 @@ function funnelKillerIdx(stages){
 function renderFunnel(a){
   const stages = eph('funnelStages', [...FUNNEL_PRESETS[0].stages]);
   const revealed = eph('funnelRevealed', false);
+  const editMode = eph('funnelEditMode', false);
   const maxV = Math.max(...stages, 1);
   const killerIdx = funnelKillerIdx(stages);
   const correctPair = `${FUNNEL_LABELS[killerIdx-1]} → ${FUNNEL_LABELS[killerIdx]}`;
@@ -803,11 +807,12 @@ function renderFunnel(a){
     const val = stages[i]||0;
     const drop = i>0 && stages[i-1]>0 ? Math.round((1-(val/stages[i-1]))*100) : 0;
     const isKiller = i===killerIdx;
+    const valueDisplay = editMode
+      ? `<input type="number" min="0" class="funnel-input" data-funnel-idx="${i}" value="${val}">`
+      : `<span class="funnel-value">${val}</span>`;
     return `<div class="funnel-row ${revealed && isKiller?'killer':''}">
       <div class="flabel"><span>${label}</span>
-        <span>${i>0?`<span class="drop-tag">↓ ${drop}% </span>`:''}
-          <input type="number" min="0" class="funnel-input" data-funnel-idx="${i}" value="${val}">
-        </span>
+        <span>${i>0?`<span class="drop-tag">↓ ${drop}% </span>`:''}${valueDisplay}</span>
       </div>
       <div class="fbar"><div style="width:${(val/maxV)*100}%"></div></div>
     </div>`;
@@ -829,10 +834,17 @@ function renderFunnel(a){
   return `
   <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
-      <h3 style="margin:0;">📉 الفانل — عدّل الأرقام لأي مثال</h3>
-      <button class="btn-ghost" id="funnelClear" style="font-size:11.5px;padding:7px 12px;">امسح الكل</button>
+      <h3 style="margin:0;">📉 الفانل</h3>
+      <button class="btn-ghost facilitator-only-btn" id="funnelEditToggle" style="font-size:11.5px;padding:7px 12px;">${editMode?'✅ تم — إخفاء أدوات التعديل':'🔧 وضع المدرب: عدّل الأرقام'}</button>
     </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">${presetBtns}</div>
+    ${editMode ? `
+    <div class="facilitator-zone">
+      <div style="font-size:11px;color:var(--dim);margin-bottom:8px;">👁️‍🗨️ الأزرار دي للمدرب بس — هتتخفي تاني لما تدوس "تم".</div>
+      <div style="display:flex;justify-content:flex-end;margin-bottom:8px;">
+        <button class="btn-ghost" id="funnelClear" style="font-size:11.5px;padding:7px 12px;">امسح الكل</button>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">${presetBtns}</div>
+    </div>`:''}
     ${rows}
   </div>
   <div class="card">
@@ -1217,6 +1229,8 @@ function attachHandlers(){
   });
   const funnelClear=document.getElementById('funnelClear');
   if(funnelClear) funnelClear.onclick=()=>{ setEph('funnelStages',[0,0,0,0,0,0]); setEph('funnelRevealed',false); setEph('funnelGuesses',{}); render(); };
+  const funnelEditToggle=document.getElementById('funnelEditToggle');
+  if(funnelEditToggle) funnelEditToggle.onclick=()=>{ setEph('funnelEditMode', !eph('funnelEditMode')); render(); };
 
   // conversion
   const cl=document.getElementById('convLeadsSlider'); if(cl) cl.oninput=(e)=>{ setEph('convLeads',+e.target.value); render(); };
