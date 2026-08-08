@@ -13,8 +13,8 @@
   --blue:#3E7CB1; --purple:#B57EDC; --text:#F5F1E8; --dim:#9AA3B2; --border:#2A3241;
   --radius:14px;
 }
-*{box-sizing:border-box; margin:0; padding:0;}
-html,body{height:100%;}
+*{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent;}
+html,body{height:100%; overflow-x:hidden; max-width:100vw;}
 body{
   background:
     radial-gradient(1200px 600px at 85% -10%, rgba(232,169,61,.08), transparent),
@@ -354,17 +354,66 @@ button{font-family:inherit; cursor:pointer; border:none;}
 /* misc */
 .badge-mini{font-size:10.5px; background:var(--panel3); padding:3px 8px; border-radius:6px; color:var(--dim);}
 .hamburger{display:none;}
+.sidebar-backdrop{display:none;}
+.sidebar-close{display:none;}
+.leader-badge{display:none;}
+
 @media(max-width:880px){
-  .sidebar{position:fixed; right:0; top:56px; bottom:0; z-index:39; transform:translateX(100%); transition:transform .25s; box-shadow:-10px 0 30px rgba(0,0,0,.4);}
-  .sidebar.open{transform:translateX(0);}
+  .topbar{padding:8px 12px; gap:8px;}
+  .score-strip{display:none;}
+  .leader-badge{
+    display:flex; align-items:center; gap:7px; background:var(--panel2); border:1px solid var(--gold);
+    border-radius:999px; padding:6px 12px; font-size:12.5px; flex:1; min-width:0;
+  }
+  .leader-badge b{font-family:'Cairo'; color:var(--gold); font-size:14px;}
+  .leader-badge span.lbl{color:var(--dim); font-size:11px; flex-shrink:0;}
+  .leader-badge span.nm{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .brand .txt{display:none;}
   .hamburger{display:flex;}
-  .main{padding:20px 16px 50px;}
+  .iconbtn{width:40px; height:40px; font-size:16px;}
+
+  .sidebar-backdrop{
+    position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:38; display:none;
+  }
+  .sidebar-backdrop.show{display:block;}
+  .sidebar{
+    position:fixed; right:0; top:0; bottom:0; width:82vw; max-width:320px; z-index:39;
+    transform:translateX(100%); transition:transform .25s; box-shadow:-10px 0 30px rgba(0,0,0,.5);
+    padding-top:10px;
+  }
+  .sidebar.open{transform:translateX(0);}
+  .sidebar-close{
+    display:flex; align-items:center; justify-content:space-between; padding:6px 6px 14px;
+    border-bottom:1px solid var(--border); margin-bottom:10px; font-family:'Cairo'; font-weight:800; font-size:14px;
+  }
+  .sidebar-close button{
+    width:32px; height:32px; border-radius:9px; background:var(--panel2); color:var(--text); font-size:15px;
+  }
+
+  .main{padding:18px 14px 50px;}
   .flip-card .fscore{font-size:38px;}
+
+  /* touch target + iOS zoom fixes */
+  input, select, textarea{font-size:16px !important;}
+  .qty-ctrl button{width:34px; height:34px; font-size:16px;}
+  .rank-item .mv button{width:32px; height:32px; font-size:14px;}
+  .award-team-btn, .cbtn, .btn-ghost, .btn-primary{min-height:40px;}
+  .classify-btns{grid-template-columns:repeat(2,1fr);}
+  .chip .plus{width:26px; height:26px;}
+  .vote-options{grid-template-columns:1fr;}
+  .funnel-row .fbar{height:26px;}
+  .tl-slot{min-width:58px; padding:9px 4px;}
+  .rp-arrow{transform:rotate(90deg);}
+}
+@media(max-width:400px){
+  .brand .mark{width:32px; height:32px; font-size:15px;}
+  .modal-box{padding:20px 16px;}
 }
 </style>
 </head>
 <body>
 <div id="app"></div>
+<div class="sidebar-backdrop" id="sidebarBackdrop"></div>
 
 <script>
 /* ========================= DATA ========================= */
@@ -531,7 +580,7 @@ function eph(key, def){ if(state.ephemeral[key]===undefined) state.ephemeral[key
 function setEph(key,val){ state.ephemeral[key]=val; }
 
 const app = document.getElementById('app');
-function render(){ save(); app.innerHTML = state.view==='setup' ? setupScreen() : mainScreen(); attachHandlers(); }
+function render(){ save(); app.innerHTML = state.view==='setup' ? setupScreen() : mainScreen(); const bd=document.getElementById('sidebarBackdrop'); if(bd) bd.classList.remove('show'); attachHandlers(); }
 
 /* ========================= SETUP ========================= */
 function setupScreen(){
@@ -576,6 +625,12 @@ function sidebarNav(){
   };
   return `<h4>الجزء الأول — Pipeline</h4>${p1.map(item).join('')}<h4>الجزء الثاني — إدارة الوقت</h4>${p2.map(item).join('')}`;
 }
+function leaderBadge(){
+  const ranked = sortedTeams();
+  if(!ranked.length) return '';
+  const top = ranked[0];
+  return `<div class="leader-badge"><span class="lbl">🥇 المتصدر</span><b class="nm">${top.name}</b><span>${top.score}</span></div>`;
+}
 function mainScreen(){
   const a = ACTIVITIES[state.activityIndex];
   return `
@@ -583,6 +638,7 @@ function mainScreen(){
     <button class="iconbtn hamburger" id="hamBtn">☰</button>
     <div class="brand"><div class="mark">🏆</div><div class="txt"><h1>ورشة الـ Pipeline</h1><span>سكوربورد حي</span></div></div>
     <div class="score-strip">${scoreStrip()}</div>
+    ${leaderBadge()}
     <div class="top-actions">
       <button class="iconbtn" id="editTeamsBtn" title="تعديل الفرق">✏️</button>
       <button class="iconbtn" id="flipBtn" title="عرض السكوربورد بالكامل">📺</button>
@@ -590,7 +646,10 @@ function mainScreen(){
     </div>
   </div>
   <div class="body-wrap">
-    <div class="sidebar" id="sidebar">${sidebarNav()}</div>
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-close">القائمة<button id="sidebarCloseBtn">✕</button></div>
+      ${sidebarNav()}
+    </div>
     <div class="main"><div class="wrap">${activityBody(a)}</div></div>
   </div>
   ${flipOverlay()}
@@ -941,7 +1000,14 @@ function attachHandlers(){
   }
 
   // header
-  const ham=document.getElementById('hamBtn'); if(ham) ham.onclick=()=>document.getElementById('sidebar').classList.toggle('open');
+  const ham=document.getElementById('hamBtn');
+  const sidebarEl=document.getElementById('sidebar');
+  const backdrop=document.getElementById('sidebarBackdrop');
+  const openSidebar=()=>{ sidebarEl.classList.add('open'); if(backdrop) backdrop.classList.add('show'); };
+  const closeSidebar=()=>{ sidebarEl.classList.remove('open'); if(backdrop) backdrop.classList.remove('show'); };
+  if(ham) ham.onclick=()=>{ sidebarEl.classList.contains('open') ? closeSidebar() : openSidebar(); };
+  const sidebarCloseBtn=document.getElementById('sidebarCloseBtn'); if(sidebarCloseBtn) sidebarCloseBtn.onclick=closeSidebar;
+  if(backdrop) backdrop.onclick=closeSidebar;
   document.getElementById('flipBtn').onclick=()=>document.getElementById('flipOverlay').classList.add('show');
   document.getElementById('flipCloseBtn').onclick=()=>document.getElementById('flipOverlay').classList.remove('show');
   document.getElementById('resetBtn').onclick=()=>{ if(confirm('هل تريد إعادة ضبط الورشة بالكامل؟')){ localStorage.removeItem('pipelineWorkshop'); state={teams:[],view:'setup',activityIndex:0,setupCount:3,ephemeral:{}}; render(); } };
@@ -971,7 +1037,7 @@ function attachHandlers(){
   };
 
   document.querySelectorAll('[data-quickpt]').forEach(b=>b.onclick=(e)=>awardPoint(+e.target.dataset.quickpt, e.target));
-  document.querySelectorAll('[data-goto]').forEach(b=>b.onclick=(e)=>{ state.activityIndex=+e.currentTarget.dataset.goto; state.ephemeral={visited:state.ephemeral.visited||[]}; render(); document.getElementById('sidebar')?.classList.remove('open'); });
+  document.querySelectorAll('[data-goto]').forEach(b=>b.onclick=(e)=>{ state.activityIndex=+e.currentTarget.dataset.goto; state.ephemeral={visited:state.ephemeral.visited||[]}; render(); });
   document.querySelectorAll('[data-nav]').forEach(b=>b.onclick=(e)=>{
     const d=+e.currentTarget.dataset.nav;
     if(state.activityIndex+d>=ACTIVITIES.length){ document.getElementById('flipOverlay').classList.add('show'); return; }
