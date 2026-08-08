@@ -186,6 +186,11 @@ button{font-family:inherit; cursor:pointer; border:none;}
 .funnel-row .fbar > div{height:100%; background:linear-gradient(90deg, var(--blue), var(--gold)); border-radius:6px; transition:width .5s;}
 .funnel-row.killer .fbar > div{background:linear-gradient(90deg, var(--red), #ff8a5c);}
 .drop-tag{font-size:11px; color:var(--red); font-weight:700;}
+.funnel-input{
+  width:64px; background:var(--panel3); border:1px solid var(--border); color:var(--gold);
+  font-family:'Cairo'; font-weight:800; font-size:13px; text-align:center; border-radius:7px; padding:4px 2px;
+}
+.funnel-input:focus{outline:none; border-color:var(--gold);}
 .vote-options{display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin:16px 0;}
 .vote-opt{
   background:var(--panel2); border:1px solid var(--border); border-radius:10px; padding:12px; text-align:center;
@@ -255,6 +260,27 @@ button{font-family:inherit; cursor:pointer; border:none;}
 }
 .tl-slot .hr{font-weight:700; margin-bottom:6px; color:var(--text); font-size:11px;}
 .tl-slot .sq{width:26px; height:26px; border-radius:6px; margin:0 auto; background:var(--panel3); font-size:14px; display:flex; align-items:center; justify-content:center;}
+.tl-slot .sqlabel{font-size:9.5px; color:var(--dim); margin-top:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+
+/* time blocks auction */
+.block-grid{display:grid; grid-template-columns:repeat(8,1fr); gap:6px;}
+@media(max-width:640px){.block-grid{grid-template-columns:repeat(4,1fr);}}
+.block-cell{
+  border:1.5px solid var(--border); border-radius:9px; padding:8px 4px; text-align:center;
+  display:flex; flex-direction:column; align-items:center; gap:3px; transition:.15s;
+}
+.block-cell:hover{transform:translateY(-1px);}
+.block-cell .bt{font-size:9.5px; color:var(--dim); font-family:'Cairo'; font-weight:700;}
+.block-cell .bi{font-size:15px;}
+
+/* category summary */
+.cat-summary{display:flex; flex-direction:column; gap:8px;}
+.cs-row{display:grid; grid-template-columns:110px 1fr 60px; align-items:center; gap:10px; font-size:12px;}
+.cs-lbl{color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.cs-bar{height:9px; border-radius:5px; background:var(--panel2); overflow:hidden;}
+.cs-bar > div{height:100%; border-radius:5px; transition:width .3s;}
+.cs-val{color:var(--gold); font-family:'Cairo'; font-weight:700; text-align:left; font-size:11.5px;}
+@media(max-width:480px){.cs-row{grid-template-columns:80px 1fr 50px;}}
 
 /* scheduler build-day */
 .slot-list{display:flex; flex-direction:column; gap:6px; margin-bottom:16px;}
@@ -428,24 +454,22 @@ const BUY_DAY_ITEMS = [
   {id:'coffee', label:'Coffee', icon:'☕', cost:10},
   {id:'meeting', label:'Meeting', icon:'🤝', cost:30},
 ];
-const TIME_AUCTION_ITEMS = [
-  {id:'calls', label:'Calls', icon:'📞', cost:60},
-  {id:'meetings', label:'Meetings', icon:'🤝', cost:90},
-  {id:'reports', label:'Reports', icon:'📊', cost:45},
-  {id:'crm', label:'CRM', icon:'🗂️', cost:45},
-  {id:'travel', label:'Travel', icon:'🚗', cost:60},
-  {id:'followup', label:'Follow-up', icon:'📱', cost:60},
-  {id:'training', label:'Training', icon:'🎓', cost:90},
+const TIME_BLOCK_CATS = [
+  {k:'calls', ic:'📞', label:'Calls', c:'#E4572E'},
+  {k:'meetings', ic:'🤝', label:'Meetings', c:'#E8A93D'},
+  {k:'reports', ic:'📊', label:'Reports', c:'#3FA796'},
+  {k:'crm', ic:'🗂️', label:'CRM', c:'#3E7CB1'},
+  {k:'travel', ic:'🚗', label:'Travel', c:'#B57EDC'},
+  {k:'followup', ic:'📱', label:'Follow-up', c:'#F2A93B'},
+  {k:'training', ic:'🎓', label:'Training', c:'#6FCF97'},
 ];
-const FUNNEL = [
-  {label:'Lead', value:300},
-  {label:'Contact', value:250},
-  {label:'Qualified', value:110},
-  {label:'Meeting', value:100},
-  {label:'Proposal', value:95},
-  {label:'Closing', value:10},
+const FUNNEL_LABELS = ['Lead','Contact','Qualified','Meeting','Proposal','Closing'];
+const FUNNEL_PRESETS = [
+  {name:'مثال 1 — انهيار في الإقفال', stages:[300,250,110,100,95,10]},
+  {name:'مثال 2 — تسريب مبكر جدًا', stages:[400,150,130,120,110,90]},
+  {name:'مثال 3 — فجوة التأهيل', stages:[350,320,80,70,65,20]},
+  {name:'ابدأ فاضي', stages:[0,0,0,0,0,0]},
 ];
-const KILL_OPTIONS = ['التسعير','الجودة','Closing (الإقفال)','Proposal → Closing'];
 const CLASSIFY_CARDS = [
   {q:'"قال كلمني بعد أسبوع."', a:'warm', tip:'حدد ميعاد دقيق وابعت تذكير قبلها بيوم.'},
   {q:'"بعت العرض من شهر ومفيش رد."', a:'cold', tip:'اتصال مباشر لمعرفة سبب التأخير أو إغلاق الملف رسميًا.'},
@@ -545,9 +569,9 @@ const ACTIVITIES = [
    type:'timeline',
    message:'الصورة اللي هتشوفها دلوقتي... هي يومك الحقيقي، مش اللي متخيله.'},
 
-  {id:11, part:2, icon:'⏳', title:'مزاد الوقت', tag:'480 دقيقة',
-   instr:'كل فريق معاه 480 دقيقة (يوم عمل كامل) يشتري بيها من الأنشطة دي. لاحظ: <b>Prospecting مش موجود في القايمة أصلًا.</b>',
-   type:'budget', total:480, unit:'د', items:TIME_AUCTION_ITEMS,
+  {id:11, part:2, icon:'⏳', title:'مزاد الوقت', tag:'480 دقيقة — 16 بلوك',
+   instr:'يوم العمل مقسّم لـ 16 بلوك (كل بلوك نص ساعة = 480 دقيقة). اضغط على أي بلوك لتلوّنه بالنشاط، وكرر لغاية ما توزع اليوم كله. لاحظ: <b>Prospecting مش موجود في القايمة أصلًا.</b>',
+   type:'timeblocks', blockMinutes:30, blockCount:16, startHour:8, cats:TIME_BLOCK_CATS,
    message:'الفرق هتتفاجئ إنهم اشتروا حاجات كتير... بس نسيوا الـ Prospecting.'},
 
   {id:12, part:2, icon:'📌', title:'ترتيب الأولويات', tag:'15 مهمة → رتبها',
@@ -681,6 +705,7 @@ function activityBody(a){
   let inner = '';
   switch(a.type){
     case 'budget': inner = renderBudget(a); break;
+    case 'timeblocks': inner = renderTimeBlocks(a); break;
     case 'discussion': inner = renderDiscussion(a); break;
     case 'funnel': inner = renderFunnel(a); break;
     case 'conversion': inner = renderConversion(a); break;
@@ -711,7 +736,7 @@ function activityBody(a){
     ${awardFooter(a.id)}
     <div class="nav-footer">
       <button class="btn-ghost" data-nav="-1" ${idx===0?'disabled style="opacity:.3"':''}>→ السابق</button>
-      <button class="btn-primary" data-nav="1" ${idx===ACTIVITIES.length-1?'disabled style="opacity:.3"':''}>${idx===ACTIVITIES.length-1?'إنهاء الورشة 🏁':'التالي ←'}</button>
+      <button class="btn-primary" data-nav="1">${idx===ACTIVITIES.length-1?'إنهاء الورشة 🏁':'التالي ←'}</button>
     </div>`;
 }
 function markVisited(id){ const v = eph('visited', []); if(!v.includes(id)){ v.push(id); } }
@@ -755,18 +780,41 @@ function renderDiscussion(a){
   </div>`;
 }
 
-/* ---- funnel: who killed the pipeline ---- */
+/* ---- funnel: who killed the pipeline (editable) ---- */
+function funnelKillerIdx(stages){
+  let maxDrop=-1, idx=1;
+  for(let i=1;i<stages.length;i++){
+    const prev=stages[i-1]||0, cur=stages[i]||0;
+    const drop = prev>0 ? (1-(cur/prev)) : 0;
+    if(drop>maxDrop){ maxDrop=drop; idx=i; }
+  }
+  return idx;
+}
 function renderFunnel(a){
+  const stages = eph('funnelStages', [...FUNNEL_PRESETS[0].stages]);
   const revealed = eph('funnelRevealed', false);
-  const maxV = FUNNEL[0].value;
-  const rows = FUNNEL.map((f,i)=>{
-    const drop = i>0 ? Math.round((1-(f.value/FUNNEL[i-1].value))*100) : 0;
-    const isKiller = i===5;
+  const maxV = Math.max(...stages, 1);
+  const killerIdx = funnelKillerIdx(stages);
+  const correctPair = `${FUNNEL_LABELS[killerIdx-1]} → ${FUNNEL_LABELS[killerIdx]}`;
+  const pairOptions = FUNNEL_LABELS.slice(1).map((l,i)=>`${FUNNEL_LABELS[i]} → ${l}`);
+  const options = ['التسعير','الجودة', ...pairOptions];
+
+  const rows = FUNNEL_LABELS.map((label,i)=>{
+    const val = stages[i]||0;
+    const drop = i>0 && stages[i-1]>0 ? Math.round((1-(val/stages[i-1]))*100) : 0;
+    const isKiller = i===killerIdx;
     return `<div class="funnel-row ${revealed && isKiller?'killer':''}">
-      <div class="flabel"><span>${f.label}</span><span>${f.value}${i>0?`<span class="drop-tag"> ↓ ${drop}%</span>`:''}</span></div>
-      <div class="fbar"><div style="width:${(f.value/maxV)*100}%"></div></div>
+      <div class="flabel"><span>${label}</span>
+        <span>${i>0?`<span class="drop-tag">↓ ${drop}% </span>`:''}
+          <input type="number" min="0" class="funnel-input" data-funnel-idx="${i}" value="${val}">
+        </span>
+      </div>
+      <div class="fbar"><div style="width:${(val/maxV)*100}%"></div></div>
     </div>`;
   }).join('');
+
+  const presetBtns = FUNNEL_PRESETS.map((p,i)=>`<button class="btn-ghost preset-btn" data-preset="${i}" style="font-size:11.5px;padding:7px 12px;">${p.name}</button>`).join('');
+
   const guesses = eph('funnelGuesses', {});
   const teamGuessRows = state.teams.map((t,i)=>`
     <div class="team-guess-row">
@@ -774,20 +822,28 @@ function renderFunnel(a){
       <b style="font-size:12.5px">${t.name}</b>
       <select data-guess="${i}">
         <option value="">اختار توقعهم...</option>
-        ${KILL_OPTIONS.map(o=>`<option ${guesses[i]===o?'selected':''}>${o}</option>`).join('')}
+        ${options.map(o=>`<option ${guesses[i]===o?'selected':''}>${o}</option>`).join('')}
       </select>
     </div>`).join('');
+
   return `
-  <div class="card"><h3>📉 الفانل</h3>${rows}</div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+      <h3 style="margin:0;">📉 الفانل — عدّل الأرقام لأي مثال</h3>
+      <button class="btn-ghost" id="funnelClear" style="font-size:11.5px;padding:7px 12px;">امسح الكل</button>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">${presetBtns}</div>
+    ${rows}
+  </div>
   <div class="card">
     <h3>🗳️ توقعات الفرق</h3>
     ${teamGuessRows}
     <button class="btn-primary" id="revealKiller" style="margin-top:12px;padding:10px 22px;font-size:13px;">اكشف الحقيقة</button>
     ${revealed ? `
       <div class="vote-options" style="margin-top:16px;">
-        ${KILL_OPTIONS.map(o=>`<div class="vote-opt ${o==='Proposal → Closing'?'correct':'wrong-x'}">${o}${o==='Proposal → Closing'?' ✅':''}</div>`).join('')}
+        ${options.map(o=>`<div class="vote-opt ${o===correctPair?'correct':'wrong-x'}">${o}${o===correctPair?' ✅':''}</div>`).join('')}
       </div>
-      <p style="font-size:12.5px;color:var(--dim);margin-top:10px">القاتل الحقيقي: انهيار 89% بين Proposal و Closing — مش السعر ولا الجودة.</p>
+      <p style="font-size:12.5px;color:var(--dim);margin-top:10px">القاتل الحقيقي: انهيار ${Math.round((1-(stages[killerIdx]/(stages[killerIdx-1]||1)))*100)}% بين ${FUNNEL_LABELS[killerIdx-1]} و ${FUNNEL_LABELS[killerIdx]} — مش بالضرورة السعر أو الجودة.</p>
     `:''}
   </div>`;
 }
@@ -883,20 +939,79 @@ function renderRoleplay(a){
   </div>`;
 }
 
+/* ---- category summary helper ---- */
+function categorySummary(counts, cats, unitEach, unitLabel){
+  const total = Object.values(counts).reduce((s,n)=>s+n,0);
+  return `<div class="cat-summary">
+    ${cats.map(c=>{
+      const n = counts[c.k]||0; const amt = n*unitEach;
+      const pct = total? Math.round((n/total)*100) : 0;
+      return `<div class="cs-row">
+        <span class="cs-lbl">${c.ic} ${c.label}</span>
+        <div class="cs-bar"><div style="width:${pct}%;background:${c.c}"></div></div>
+        <span class="cs-val">${amt} ${unitLabel}</span>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
 /* ---- timeline colorer ---- */
 function renderTimeline(a){
   const colors = eph('tlColors', Object.fromEntries(TL_HOURS.map(h=>[h,null])));
+  const counts = {}; TL_COLORS.forEach(c=>counts[c.k]=0);
+  Object.values(colors).forEach(k=>{ if(k && counts[k]!==undefined) counts[k]++; });
   return `
   <div class="card">
+    <p style="font-size:13px;color:var(--text);margin-bottom:14px;line-height:1.8;">
+      اضغط على كل ساعة من يومك واختار إيه اللي فعلًا بيحصل فيها (مش اللي المفروض يحصل). كل ضغطة بتنقّل بين اللون التالي.
+    </p>
     <div class="tl-legend">${TL_COLORS.map(c=>`<div class="lg"><span class="sw" style="background:${c.c}"></span>${c.ic} ${c.label}</div>`).join('')}</div>
     <div class="tl-grid">
       ${TL_HOURS.map(h=>{
         const cur = colors[h];
         const cObj = TL_COLORS.find(c=>c.k===cur);
-        return `<div class="tl-slot"><div class="hr">${h}</div><div class="sq" data-tlhour="${h}" style="background:${cObj?cObj.c+'33':'var(--panel3)'};border:1.5px solid ${cObj?cObj.c:'var(--border)'}">${cObj?cObj.ic:''}</div></div>`;
+        return `<div class="tl-slot"><div class="hr">${h}</div><div class="sq" data-tlhour="${h}" style="background:${cObj?cObj.c+'33':'var(--panel3)'};border:1.5px solid ${cObj?cObj.c:'var(--border)'}">${cObj?cObj.ic:''}</div><div class="sqlabel">${cObj?cObj.label:'—'}</div></div>`;
       }).join('')}
     </div>
-    <p style="font-size:11.5px;color:var(--dim);margin-top:10px;">اضغط على أي ساعة للتنقل بين الألوان الأربعة.</p>
+  </div>
+  <div class="card">
+    <h3>📊 توزيع يومك الحقيقي (بالساعات)</h3>
+    ${categorySummary(counts, TL_COLORS, 1, 'ساعة')}
+  </div>`;
+}
+
+/* ---- time blocks auction (more granular than hourly) ---- */
+function renderTimeBlocks(a){
+  const key='timeblocks';
+  const cellsState = eph(key, Array.from({length:a.blockCount}, ()=>null));
+  const counts = {}; a.cats.forEach(c=>counts[c.k]=0);
+  cellsState.forEach(k=>{ if(k && counts[k]!==undefined) counts[k]++; });
+  const filled = cellsState.filter(Boolean).length;
+  const timeLabel = (i)=>{
+    const totalMin = a.startHour*60 + i*a.blockMinutes;
+    const h = Math.floor(totalMin/60), m = totalMin%60;
+    return `${h}:${m.toString().padStart(2,'0')}`;
+  };
+  return `
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+      <h3 style="margin:0;">⏳ ${filled} / ${a.blockCount} بلوك متوزّع</h3>
+      <button class="btn-ghost" id="blocksClear" style="font-size:11.5px;padding:7px 12px;">امسح الكل</button>
+    </div>
+    <div class="tl-legend">${a.cats.map(c=>`<div class="lg"><span class="sw" style="background:${c.c}"></span>${c.ic} ${c.label}</div>`).join('')}</div>
+    <div class="block-grid">
+      ${cellsState.map((k,i)=>{
+        const cObj = a.cats.find(c=>c.k===k);
+        return `<div class="block-cell" data-blockidx="${i}" style="background:${cObj?cObj.c+'2e':'var(--panel2)'};border-color:${cObj?cObj.c:'var(--border)'}">
+          <span class="bt">${timeLabel(i)}</span>
+          <span class="bi">${cObj?cObj.ic:'＋'}</span>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>
+  <div class="card">
+    <h3>📊 توزيع الـ 480 دقيقة</h3>
+    ${categorySummary(counts, a.cats, a.blockMinutes, 'د')}
   </div>`;
 }
 
@@ -1081,6 +1196,27 @@ function attachHandlers(){
   document.querySelectorAll('[data-guess]').forEach(s=>s.onchange=(e)=>{
     const g=eph('funnelGuesses'); g[e.currentTarget.dataset.guess]=e.currentTarget.value;
   });
+  document.querySelectorAll('[data-funnel-idx]').forEach(inp=>inp.oninput=(e)=>{
+    const stages=eph('funnelStages'); stages[+e.currentTarget.dataset.funnelIdx] = Math.max(0, +e.currentTarget.value || 0);
+    setEph('funnelRevealed', false); setEph('funnelGuesses', {});
+    save();
+    // live-update bars/labels without full re-render so the number input keeps focus
+    const idxChanged = +e.currentTarget.dataset.funnelIdx;
+    const maxV = Math.max(...stages, 1);
+    document.querySelectorAll('.funnel-row').forEach((row,i)=>{
+      const val = stages[i]||0;
+      const drop = i>0 && stages[i-1]>0 ? Math.round((1-(val/stages[i-1]))*100) : 0;
+      const dropTag = row.querySelector('.drop-tag'); if(dropTag) dropTag.textContent = `↓ ${drop}% `;
+      const bar = row.querySelector('.fbar > div'); if(bar) bar.style.width = (val/maxV*100)+'%';
+      if(i!==idxChanged){ const inp2=row.querySelector('input'); if(inp2) inp2.value = val; }
+    });
+  });
+  document.querySelectorAll('[data-preset]').forEach(b=>b.onclick=(e)=>{
+    const p=FUNNEL_PRESETS[+e.currentTarget.dataset.preset];
+    setEph('funnelStages',[...p.stages]); setEph('funnelRevealed',false); setEph('funnelGuesses',{}); render();
+  });
+  const funnelClear=document.getElementById('funnelClear');
+  if(funnelClear) funnelClear.onclick=()=>{ setEph('funnelStages',[0,0,0,0,0,0]); setEph('funnelRevealed',false); setEph('funnelGuesses',{}); render(); };
 
   // conversion
   const cl=document.getElementById('convLeadsSlider'); if(cl) cl.oninput=(e)=>{ setEph('convLeads',+e.target.value); render(); };
@@ -1102,6 +1238,16 @@ function attachHandlers(){
     colors[h]= curIdx===-1 ? keys[0] : (curIdx===keys.length-1 ? null : keys[curIdx+1]);
     render();
   });
+
+  // time blocks auction
+  document.querySelectorAll('[data-blockidx]').forEach(cell=>cell.onclick=(e)=>{
+    const a=ACTIVITIES[state.activityIndex]; const cells=eph('timeblocks'); const i=+e.currentTarget.dataset.blockidx;
+    const keys=a.cats.map(c=>c.k); const cur=cells[i]; const curIdx=keys.indexOf(cur);
+    cells[i]= curIdx===-1 ? keys[0] : (curIdx===keys.length-1 ? null : keys[curIdx+1]);
+    render();
+  });
+  const blocksClear=document.getElementById('blocksClear');
+  if(blocksClear) blocksClear.onclick=()=>{ const a=ACTIVITIES[state.activityIndex]; setEph('timeblocks', Array.from({length:a.blockCount},()=>null)); render(); };
 
   // rank
   document.querySelectorAll('[data-rankmove]').forEach(b=>b.onclick=(e)=>{
