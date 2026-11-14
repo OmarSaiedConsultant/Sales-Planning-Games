@@ -1,1306 +1,2024 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="ar" dir="rtl" class="dark">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ورشة إدارة الـ Pipeline والوقت | لعبة تفاعلية</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;800;900&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>
-:root{
-  --bg:#12161d; --panel:#1b212b; --panel2:#222939; --panel3:#2a3242;
-  --gold:#E8A93D; --gold-deep:#C9862A; --red:#E4572E; --green:#3FA796;
-  --blue:#3E7CB1; --purple:#B57EDC; --text:#F5F1E8; --dim:#9AA3B2; --border:#2A3241;
-  --radius:14px;
-}
-*{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent;}
-html,body{height:100%; overflow-x:hidden; max-width:100vw;}
-body{
-  background:
-    radial-gradient(1200px 600px at 85% -10%, rgba(232,169,61,.08), transparent),
-    radial-gradient(900px 500px at -5% 110%, rgba(62,124,177,.10), transparent),
-    var(--bg);
-  color:var(--text);
-  font-family:'IBM Plex Sans Arabic', sans-serif;
-  min-height:100vh;
-}
-h1,h2,h3,.disp{font-family:'Cairo', sans-serif; font-weight:800;}
-button{font-family:inherit; cursor:pointer; border:none;}
-::-webkit-scrollbar{width:8px; height:8px;}
-::-webkit-scrollbar-thumb{background:var(--panel3); border-radius:10px;}
-
-/* ---------- layout shell ---------- */
-#app{min-height:100vh; display:flex; flex-direction:column;}
-.topbar{
-  position:sticky; top:0; z-index:40;
-  background:linear-gradient(180deg, rgba(27,33,43,.97), rgba(27,33,43,.88));
-  backdrop-filter:blur(10px);
-  border-bottom:1px solid var(--border);
-  padding:10px 18px;
-  display:flex; align-items:center; gap:16px; flex-wrap:wrap;
-}
-.brand{display:flex; align-items:center; gap:10px; flex-shrink:0;}
-.brand .mark{
-  width:38px; height:38px; border-radius:10px;
-  background:linear-gradient(145deg, var(--gold), var(--gold-deep));
-  display:flex; align-items:center; justify-content:center; font-size:19px;
-  box-shadow:0 4px 14px rgba(232,169,61,.35);
-}
-.brand .txt h1{font-size:15px; line-height:1.3;}
-.brand .txt span{font-size:11px; color:var(--dim); font-weight:500;}
-.score-strip{display:flex; gap:8px; flex-wrap:wrap; flex:1; align-items:center;}
-.chip{
-  display:flex; align-items:center; gap:7px;
-  background:var(--panel2); border:1px solid var(--border);
-  border-radius:999px; padding:5px 12px 5px 6px; position:relative;
-  transition:transform .25s;
-}
-.chip.lead{border-color:var(--gold);}
-.chip .dot{width:9px; height:9px; border-radius:50%; flex-shrink:0;}
-.chip b{font-size:13px;}
-.chip .pts{font-family:'Cairo'; font-weight:800; font-size:14px; color:var(--gold);}
-.chip .medal{font-size:12px; margin-left:2px;}
-.chip .plus{
-  background:var(--panel3); color:var(--text); width:20px; height:20px; border-radius:50%;
-  font-size:13px; display:flex; align-items:center; justify-content:center;
-}
-.chip .plus:hover{background:var(--gold); color:#1b1400;}
-.floatpt{
-  position:absolute; top:-6px; right:8px; color:var(--gold); font-family:'Cairo'; font-weight:800;
-  font-size:13px; animation:floatUp .9s ease-out forwards; pointer-events:none;
-}
-@keyframes floatUp{0%{opacity:0; transform:translateY(0)}20%{opacity:1}100%{opacity:0; transform:translateY(-22px)}}
-.top-actions{display:flex; gap:8px; flex-shrink:0;}
-.iconbtn{
-  background:var(--panel2); border:1px solid var(--border); color:var(--text);
-  width:36px; height:36px; border-radius:10px; font-size:15px;
-  display:flex; align-items:center; justify-content:center;
-}
-.iconbtn:hover{border-color:var(--gold); color:var(--gold);}
-
-.body-wrap{display:flex; flex:1; min-height:0;}
-.sidebar{
-  width:260px; flex-shrink:0; background:var(--panel);
-  border-left:1px solid var(--border); padding:16px 12px; overflow-y:auto;
-}
-.sidebar h4{font-size:11px; color:var(--dim); font-weight:700; margin:14px 6px 8px; letter-spacing:.5px;}
-.navitem{
-  display:flex; align-items:center; gap:9px; padding:9px 10px; border-radius:10px;
-  font-size:13px; color:var(--dim); margin-bottom:3px; transition:.15s;
-}
-.navitem .n{
-  width:22px; height:22px; border-radius:50%; background:var(--panel2); flex-shrink:0;
-  display:flex; align-items:center; justify-content:center; font-size:10.5px; font-weight:700;
-}
-.navitem:hover{background:var(--panel2); color:var(--text);}
-.navitem.active{background:linear-gradient(90deg, rgba(232,169,61,.18), transparent); color:var(--text); font-weight:700;}
-.navitem.active .n{background:var(--gold); color:#1b1400;}
-.navitem.done .n{background:var(--green); color:#04231d;}
-.navitem.done .n::after{content:'✓';}
-
-.main{flex:1; padding:26px 30px 60px; overflow-y:auto; min-width:0;}
-.wrap{max-width:880px; margin:0 auto;}
-
-/* ---------- setup screen ---------- */
-.setup{max-width:640px; margin:6vh auto; text-align:center;}
-.setup .hero-icon{font-size:52px; margin-bottom:10px;}
-.setup h1{font-size:30px; margin-bottom:8px;}
-.setup p.sub{color:var(--dim); margin-bottom:32px; font-size:14.5px; line-height:1.8;}
-.stepper-row{display:flex; align-items:center; justify-content:center; gap:14px; margin-bottom:22px;}
-.stepper-row button{
-  width:40px; height:40px; border-radius:50%; background:var(--panel2); border:1px solid var(--border);
-  color:var(--gold); font-size:18px; font-weight:800;
-}
-.stepper-row .count{font-family:'Cairo'; font-size:26px; font-weight:800;}
-.team-inputs{display:grid; gap:10px; margin-bottom:28px;}
-.team-inputs input{
-  background:var(--panel2); border:1px solid var(--border); color:var(--text);
-  padding:12px 14px; border-radius:10px; font-size:14px; text-align:center;
-  border-right:4px solid var(--tc, var(--gold));
-}
-.team-inputs input:focus{outline:none; border-color:var(--gold);}
-.btn-primary{
-  background:linear-gradient(135deg, var(--gold), var(--gold-deep)); color:#1b1400;
-  padding:14px 34px; border-radius:12px; font-weight:800; font-family:'Cairo'; font-size:15.5px;
-  box-shadow:0 8px 22px rgba(232,169,61,.28);
-}
-.btn-primary:hover{filter:brightness(1.08);}
-.btn-ghost{
-  background:transparent; border:1px solid var(--border); color:var(--text);
-  padding:11px 22px; border-radius:12px; font-weight:700; font-size:13.5px;
-}
-.btn-ghost:hover{border-color:var(--gold); color:var(--gold);}
-
-/* ---------- activity content ---------- */
-.part-tag{
-  display:inline-flex; align-items:center; gap:6px; font-size:11.5px; font-weight:700;
-  color:var(--gold); background:rgba(232,169,61,.12); padding:5px 12px; border-radius:999px; margin-bottom:14px;
-}
-.activity-head{margin-bottom:22px;}
-.activity-head .ic{font-size:34px;}
-.activity-head h2{font-size:25px; margin:8px 0 6px;}
-.activity-head .tagline{color:var(--dim); font-size:14px; line-height:1.8;}
-.card{
-  background:var(--panel); border:1px solid var(--border); border-radius:var(--radius);
-  padding:20px 22px; margin-bottom:16px;
-}
-.card h3{font-size:14.5px; margin-bottom:10px; display:flex; align-items:center; gap:8px;}
-.instr{
-  background:var(--panel2); border-right:3px solid var(--blue); border-radius:10px;
-  padding:13px 16px; font-size:13.5px; color:var(--text); line-height:1.9; margin-top:10px;
-  display:none;
-}
-.instr.show{display:block;}
-.instr b{color:var(--blue);}
-.instr-toggle{
-  display:inline-flex; align-items:center; gap:8px; background:var(--panel2); border:1px solid var(--blue);
-  color:var(--blue); padding:9px 18px; border-radius:10px; font-weight:700; font-size:13px; margin-bottom:6px;
-}
-.instr-toggle:hover{filter:brightness(1.15);}
-.grid2{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
-@media(max-width:720px){.grid2{grid-template-columns:1fr;}}
-
-/* budget allocator */
-.budget-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;}
-.budget-remain{font-family:'Cairo'; font-size:15px;}
-.budget-remain b{font-size:22px; color:var(--gold);}
-.budget-bar{height:10px; border-radius:6px; background:var(--panel2); overflow:hidden; margin-bottom:18px;}
-.budget-bar .fill{height:100%; background:linear-gradient(90deg, var(--green), var(--gold)); transition:width .3s;}
-.item-row{
-  display:flex; align-items:center; justify-content:space-between; gap:10px;
-  background:var(--panel2); border:1px solid var(--border); border-radius:10px; padding:10px 14px; margin-bottom:8px;
-}
-.item-row .lbl{display:flex; align-items:center; gap:10px; font-size:13.5px;}
-.item-row .cost{color:var(--dim); font-size:12px;}
-.qty-ctrl{display:flex; align-items:center; gap:8px;}
-.qty-ctrl button{
-  width:26px; height:26px; border-radius:7px; background:var(--panel3); color:var(--text); font-size:14px; font-weight:700;
-}
-.qty-ctrl button:hover{background:var(--gold); color:#1b1400;}
-.qty-ctrl span{min-width:16px; text-align:center; font-family:'Cairo'; font-weight:700;}
-
-/* voting / funnel */
-.funnel-row{margin-bottom:10px;}
-.funnel-row .flabel{display:flex; justify-content:space-between; font-size:12.5px; margin-bottom:4px; color:var(--dim);}
-.funnel-row .fbar{height:22px; border-radius:6px; background:var(--panel2); overflow:hidden;}
-.funnel-row .fbar > div{height:100%; background:linear-gradient(90deg, var(--blue), var(--gold)); border-radius:6px; transition:width .5s;}
-.funnel-row.killer .fbar > div{background:linear-gradient(90deg, var(--red), #ff8a5c);}
-.drop-tag{font-size:11px; color:var(--red); font-weight:700;}
-.funnel-input{
-  width:64px; background:var(--panel3); border:1px solid var(--border); color:var(--gold);
-  font-family:'Cairo'; font-weight:800; font-size:13px; text-align:center; border-radius:7px; padding:4px 2px;
-}
-.funnel-input:focus{outline:none; border-color:var(--gold);}
-.funnel-value{font-family:'Cairo'; font-weight:800; font-size:14px; color:var(--gold); min-width:32px; display:inline-block; text-align:center;}
-.facilitator-zone{background:rgba(62,124,177,.08); border:1px dashed var(--blue); border-radius:10px; padding:10px 12px; margin-bottom:14px;}
-.facilitator-only-btn{border-color:var(--blue); color:var(--blue);}
-.vote-options{display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin:16px 0;}
-.vote-opt{
-  background:var(--panel2); border:1px solid var(--border); border-radius:10px; padding:12px; text-align:center;
-  font-size:13px; font-weight:600; transition:.15s;
-}
-.vote-opt:hover{border-color:var(--gold);}
-.vote-opt.correct{border-color:var(--green); background:rgba(63,167,150,.15); color:var(--green);}
-.vote-opt.wrong-x{border-color:var(--red); background:rgba(228,87,46,.1); opacity:.6;}
-.team-guess-row{display:flex; align-items:center; gap:10px; margin-bottom:8px; flex-wrap:wrap;}
-.team-guess-row select{
-  background:var(--panel2); border:1px solid var(--border); color:var(--text); border-radius:8px; padding:6px 10px; font-size:12.5px;
-}
-.result-tag{font-size:16px;}
-
-/* classify cards */
-.classify-card{
-  background:var(--panel2); border:1px solid var(--border); border-radius:12px; padding:20px;
-  text-align:center; margin-bottom:16px;
-}
-.classify-card .quote{font-size:16px; font-weight:600; margin-bottom:16px; line-height:1.7;}
-.classify-btns{display:grid; grid-template-columns:repeat(4,1fr); gap:8px;}
-.cbtn{padding:10px 6px; border-radius:9px; font-size:12.5px; font-weight:700; border:1.5px solid var(--border); background:var(--panel3); color:var(--text);}
-.cbtn[data-k="hot"]{border-color:var(--red);} .cbtn[data-k="hot"].sel{background:var(--red); color:#2a0800;}
-.cbtn[data-k="warm"]{border-color:var(--gold);} .cbtn[data-k="warm"].sel{background:var(--gold); color:#2a1a00;}
-.cbtn[data-k="cold"]{border-color:var(--blue);} .cbtn[data-k="cold"].sel{background:var(--blue); color:#031522;}
-.cbtn[data-k="dead"]{border-color:var(--dim);} .cbtn[data-k="dead"].sel{background:var(--dim); color:#151515;}
-.tip-box{
-  margin-top:14px; background:rgba(63,167,150,.1); border-right:3px solid var(--green);
-  padding:10px 14px; border-radius:8px; font-size:12.5px; color:var(--text); text-align:right; display:none;
-}
-.tip-box.show{display:block;}
-.deck-progress{display:flex; gap:5px; justify-content:center; margin-bottom:14px; flex-wrap:wrap;}
-.deck-progress span{width:7px; height:7px; border-radius:50%; background:var(--panel3);}
-.deck-progress span.done{background:var(--gold);}
-
-/* roleplay */
-.rp-pair{display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:12px; margin-bottom:14px;}
-@media(max-width:640px){.rp-pair{grid-template-columns:1fr;}}
-.rp-box{border-radius:10px; padding:16px; font-size:14px; font-weight:600; line-height:1.7; text-align:center;}
-.rp-box.wrong{background:rgba(228,87,46,.1); border:1.5px solid var(--red); color:#ffb69c;}
-.rp-box.right{background:rgba(63,167,150,.12); border:1.5px solid var(--green); color:#a9e8dc;}
-.rp-arrow{font-size:20px; color:var(--dim);}
-.rp-label{font-size:10.5px; font-weight:800; margin-bottom:6px; letter-spacing:.5px;}
-
-/* ranking */
-.rank-list{list-style:none; display:flex; flex-direction:column; gap:8px;}
-.rank-item{
-  display:flex; align-items:center; gap:12px; background:var(--panel2); border:1px solid var(--border);
-  border-radius:10px; padding:10px 14px; cursor:grab; font-size:13.5px;
-}
-.rank-item .num{
-  width:24px; height:24px; border-radius:50%; background:var(--gold); color:#1b1400; font-family:'Cairo'; font-weight:800;
-  font-size:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0;
-}
-.rank-item .mv{display:flex; gap:4px; margin-right:auto;}
-.rank-item .mv button{width:24px; height:24px; border-radius:6px; background:var(--panel3); color:var(--text);}
-.rank-item.dragging{opacity:.4;}
-
-/* timeline colorer */
-.tl-legend{display:flex; gap:14px; margin-bottom:14px; flex-wrap:wrap;}
-.tl-legend .lg{display:flex; align-items:center; gap:6px; font-size:12.5px;}
-.tl-legend .sw{width:16px; height:16px; border-radius:4px;}
-.tl-grid{display:flex; gap:4px; flex-wrap:wrap;}
-.tl-slot{
-  flex:1; min-width:70px; background:var(--panel2); border:1px solid var(--border); border-radius:8px;
-  padding:12px 6px; text-align:center; font-size:11px; color:var(--dim);
-}
-.tl-slot .hr{font-weight:700; margin-bottom:6px; color:var(--text); font-size:11px;}
-.tl-slot .sq{width:26px; height:26px; border-radius:6px; margin:0 auto; background:var(--panel3); font-size:14px; display:flex; align-items:center; justify-content:center;}
-.tl-slot .sqlabel{font-size:9.5px; color:var(--dim); margin-top:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
-
-/* time blocks auction */
-.block-grid{display:grid; grid-template-columns:repeat(8,1fr); gap:6px;}
-@media(max-width:640px){.block-grid{grid-template-columns:repeat(4,1fr);}}
-.block-cell{
-  border:1.5px solid var(--border); border-radius:9px; padding:8px 4px; text-align:center;
-  display:flex; flex-direction:column; align-items:center; gap:3px; transition:.15s;
-}
-.block-cell:hover{transform:translateY(-1px);}
-.block-cell .bt{font-size:9.5px; color:var(--dim); font-family:'Cairo'; font-weight:700;}
-.block-cell .bi{font-size:15px;}
-
-/* category summary */
-.cat-summary{display:flex; flex-direction:column; gap:8px;}
-.cs-row{display:grid; grid-template-columns:110px 1fr 60px; align-items:center; gap:10px; font-size:12px;}
-.cs-lbl{color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
-.cs-bar{height:9px; border-radius:5px; background:var(--panel2); overflow:hidden;}
-.cs-bar > div{height:100%; border-radius:5px; transition:width .3s;}
-.cs-val{color:var(--gold); font-family:'Cairo'; font-weight:700; text-align:left; font-size:11.5px;}
-@media(max-width:480px){.cs-row{grid-template-columns:80px 1fr 50px;}}
-
-/* scheduler build-day */
-.slot-list{display:flex; flex-direction:column; gap:6px; margin-bottom:16px;}
-.slot-line{display:flex; align-items:center; gap:10px; background:var(--panel2); border:1px solid var(--border); border-radius:9px; padding:8px 12px;}
-.slot-line .time{width:70px; font-size:12px; color:var(--dim); flex-shrink:0;}
-.slot-line select{flex:1; background:var(--panel3); border:1px solid var(--border); color:var(--text); border-radius:7px; padding:6px 10px; font-size:12.5px;}
-.critique-q{background:var(--panel2); border-right:3px solid var(--purple); border-radius:8px; padding:9px 14px; font-size:13px; margin-bottom:7px;}
-
-/* commitment */
-.commit-box{background:var(--panel2); border:2px dashed var(--border); border-radius:12px; padding:22px; text-align:center;}
-.commit-box .lines{display:flex; flex-direction:column; gap:10px; margin:16px 0; max-width:420px; margin-inline:auto;}
-.commit-box .lines div{border-bottom:1.5px solid var(--panel3); padding:8px 4px; font-size:13px; color:var(--dim);}
-.timer{font-family:'Cairo'; font-size:38px; font-weight:800; color:var(--gold); text-align:center; margin:10px 0;}
-
-/* message reveal */
-.msg-toggle{
-  display:inline-flex; align-items:center; gap:8px; background:var(--panel2); border:1px solid var(--gold);
-  color:var(--gold); padding:9px 18px; border-radius:10px; font-weight:700; font-size:13px; margin-top:6px;
-}
-.msg-box{
-  margin-top:12px; background:linear-gradient(135deg, rgba(232,169,61,.14), rgba(232,169,61,.04));
-  border:1px solid var(--gold); border-radius:12px; padding:16px 18px; font-family:'Cairo'; font-weight:700;
-  font-size:15.5px; line-height:1.9; display:none;
-}
-.msg-box.show{display:block; animation:pop .3s;}
-@keyframes pop{from{transform:scale(.96); opacity:0}to{transform:scale(1); opacity:1}}
-
-/* award footer */
-.award-footer{
-  display:flex; align-items:center; gap:10px; flex-wrap:wrap; background:var(--panel);
-  border:1px solid var(--border); border-radius:var(--radius); padding:14px 18px; margin-top:20px;
-}
-.award-footer .lbl{font-size:12.5px; color:var(--dim); font-weight:700;}
-.award-team-btn{
-  display:flex; align-items:center; gap:6px; background:var(--panel2); border:1px solid var(--border);
-  padding:7px 12px; border-radius:999px; font-size:12.5px; font-weight:700; color:var(--text);
-}
-.award-team-btn:hover{border-color:var(--gold); color:var(--gold);}
-.award-team-btn .d{width:8px; height:8px; border-radius:50%;}
-
-/* nav footer */
-.nav-footer{display:flex; justify-content:space-between; margin-top:26px; gap:10px;}
-
-/* flip overlay */
-.flip-overlay{
-  position:fixed; inset:0; background:rgba(10,12,16,.96); z-index:100; display:none;
-  align-items:center; justify-content:center; flex-direction:column; padding:30px;
-}
-.flip-overlay.show{display:flex;}
-.flip-overlay h2{font-size:15px; color:var(--dim); letter-spacing:2px; margin-bottom:26px; text-transform:uppercase;}
-.flip-board{display:flex; gap:22px; flex-wrap:wrap; justify-content:center; max-width:1000px;}
-.flip-card{
-  background:var(--panel); border:2px solid var(--border); border-radius:18px; padding:24px 30px; text-align:center;
-  min-width:150px; position:relative;
-}
-.flip-card.rank1{border-color:var(--gold); box-shadow:0 0 40px rgba(232,169,61,.35);}
-.flip-card .crown{font-size:24px; position:absolute; top:-18px; left:50%; transform:translateX(-50%);}
-.flip-card .fname{font-size:14px; color:var(--dim); margin-bottom:8px; font-weight:700;}
-.flip-card .fscore{font-family:'Cairo'; font-size:52px; font-weight:900; color:var(--gold);}
-.flip-close{margin-top:34px;}
-
-/* edit teams modal */
-.modal-overlay{
-  position:fixed; inset:0; background:rgba(10,12,16,.88); z-index:110; display:none;
-  align-items:center; justify-content:center; padding:20px;
-}
-.modal-overlay.show{display:flex;}
-.modal-box{
-  background:var(--panel); border:1px solid var(--border); border-radius:16px; padding:26px 24px;
-  max-width:440px; width:100%; max-height:85vh; overflow-y:auto;
-}
-.modal-box h3{font-size:17px; margin-bottom:16px; text-align:center;}
-.edit-team-row{display:flex; align-items:center; gap:8px; margin-bottom:10px;}
-.edit-team-row input{
-  flex:1; background:var(--panel2); border:1px solid var(--border); color:var(--text);
-  padding:10px 12px; border-radius:9px; font-size:13.5px; border-right:4px solid var(--tc, var(--gold));
-}
-.edit-team-row input:focus{outline:none; border-color:var(--gold);}
-.edit-team-row .rm{
-  width:32px; height:32px; border-radius:8px; background:var(--panel3); color:var(--red); font-size:15px; flex-shrink:0;
-}
-.edit-team-row .rm:hover{background:var(--red); color:#2a0800;}
-.edit-add-btn{
-  width:100%; padding:10px; border-radius:9px; background:var(--panel2); border:1px dashed var(--border);
-  color:var(--dim); font-size:13px; margin-bottom:18px;
-}
-.edit-add-btn:hover{border-color:var(--gold); color:var(--gold);}
-.modal-actions{display:flex; gap:10px; justify-content:center;}
-
-/* closing */
-.closing-quote{
-  text-align:center; padding:60px 20px; font-family:'Cairo'; font-size:22px; font-weight:800; line-height:2;
-  background:linear-gradient(135deg, rgba(232,169,61,.1), transparent); border-radius:16px; border:1px solid var(--border);
-}
-.closing-quote span{color:var(--gold);}
-
-/* misc */
-.badge-mini{font-size:10.5px; background:var(--panel3); padding:3px 8px; border-radius:6px; color:var(--dim);}
-.hamburger{display:none;}
-.sidebar-backdrop{display:none;}
-.sidebar-close{display:none;}
-.leader-badge{display:none;}
-
-@media(max-width:880px){
-  .topbar{padding:8px 12px; gap:8px;}
-  .score-strip{display:none;}
-  .leader-badge{
-    display:flex; align-items:center; gap:7px; background:var(--panel2); border:1px solid var(--gold);
-    border-radius:999px; padding:6px 12px; font-size:12.5px; flex:1; min-width:0;
-  }
-  .leader-badge b{font-family:'Cairo'; color:var(--gold); font-size:14px;}
-  .leader-badge span.lbl{color:var(--dim); font-size:11px; flex-shrink:0;}
-  .leader-badge span.nm{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
-  .brand .txt{display:none;}
-  .hamburger{display:flex;}
-  .iconbtn{width:40px; height:40px; font-size:16px;}
-
-  .sidebar-backdrop{
-    position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:38; display:none;
-  }
-  .sidebar-backdrop.show{display:block;}
-  .sidebar{
-    position:fixed; right:0; top:0; bottom:0; width:82vw; max-width:320px; z-index:39;
-    transform:translateX(100%); transition:transform .25s; box-shadow:-10px 0 30px rgba(0,0,0,.5);
-    padding-top:10px;
-  }
-  .sidebar.open{transform:translateX(0);}
-  .sidebar-close{
-    display:flex; align-items:center; justify-content:space-between; padding:6px 6px 14px;
-    border-bottom:1px solid var(--border); margin-bottom:10px; font-family:'Cairo'; font-weight:800; font-size:14px;
-  }
-  .sidebar-close button{
-    width:32px; height:32px; border-radius:9px; background:var(--panel2); color:var(--text); font-size:15px;
-  }
-
-  .main{padding:18px 14px 50px;}
-  .flip-card .fscore{font-size:38px;}
-
-  /* touch target + iOS zoom fixes */
-  input, select, textarea{font-size:16px !important;}
-  .qty-ctrl button{width:34px; height:34px; font-size:16px;}
-  .rank-item .mv button{width:32px; height:32px; font-size:14px;}
-  .award-team-btn, .cbtn, .btn-ghost, .btn-primary{min-height:40px;}
-  .classify-btns{grid-template-columns:repeat(2,1fr);}
-  .chip .plus{width:26px; height:26px;}
-  .vote-options{grid-template-columns:1fr;}
-  .funnel-row .fbar{height:26px;}
-  .tl-slot{min-width:58px; padding:9px 4px;}
-  .rp-arrow{transform:rotate(90deg);}
-}
-@media(max-width:400px){
-  .brand .mark{width:32px; height:32px; font-size:15px;}
-  .modal-box{padding:20px 16px;}
-}
-</style>
-</head>
-<body>
-<div id="app"></div>
-<div class="sidebar-backdrop" id="sidebarBackdrop"></div>
-
-<script>
-/* ========================= DATA ========================= */
-const TEAM_COLORS = ['#E8A93D','#3FA796','#E4572E','#3E7CB1','#B57EDC','#F2C14E'];
-
-const BUY_DAY_ITEMS = [
-  {id:'prospecting', label:'Prospecting', icon:'🎯', cost:35},
-  {id:'followup', label:'Follow-up', icon:'📞', cost:30},
-  {id:'crm', label:'CRM', icon:'🗂️', cost:15},
-  {id:'reports', label:'Reports', icon:'📊', cost:15},
-  {id:'whatsapp', label:'WhatsApp', icon:'💬', cost:25},
-  {id:'coffee', label:'Coffee', icon:'☕', cost:10},
-  {id:'meeting', label:'Meeting', icon:'🤝', cost:30},
-];
-const TIME_BLOCK_CATS = [
-  {k:'calls', ic:'📞', label:'Calls', c:'#E4572E'},
-  {k:'meetings', ic:'🤝', label:'Meetings', c:'#E8A93D'},
-  {k:'reports', ic:'📊', label:'Reports', c:'#3FA796'},
-  {k:'crm', ic:'🗂️', label:'CRM', c:'#3E7CB1'},
-  {k:'travel', ic:'🚗', label:'Travel', c:'#B57EDC'},
-  {k:'followup', ic:'📱', label:'Follow-up', c:'#F2A93B'},
-  {k:'training', ic:'🎓', label:'Training', c:'#6FCF97'},
-];
-const FUNNEL_LABELS = ['Lead','Contact','Meeting','Proposal','Closing'];
-const FUNNEL_PRESETS = [
-  {name:'مثال 1 — انهيار في الإقفال', stages:[300,250,100,95,10]},
-  {name:'مثال 2 — تسريب مبكر جدًا', stages:[400,150,120,110,90]},
-  {name:'مثال 3 — فجوة التأهيل', stages:[350,320,70,65,20]},
-  {name:'ابدأ فاضي', stages:[0,0,0,0,0]},
-];
-const CLASSIFY_CARDS = [
-  {q:'"قال كلمني بعد أسبوع."', a:'warm', tip:'حدد ميعاد دقيق وابعت تذكير قبلها بيوم.'},
-  {q:'"بعت العرض من شهر ومفيش رد."', a:'cold', tip:'اتصال مباشر لمعرفة سبب التأخير أو إغلاق الملف رسميًا.'},
-  {q:'"طلب خصم."', a:'hot', tip:'قريب جدًا من القرار — فاوض بذكاء ومن غير تنازل سريع.'},
-  {q:'"قفل المكالمة فجأة."', a:'dead', tip:'سجله وارجعله بعد فترة أطول بمقترح مختلف تمامًا.'},
-  {q:'"قال ابعتلي التفاصيل على الواتساب."', a:'warm', tip:'ابعت فورًا، وتابع خلال 24 ساعة بالظبط.'},
-  {q:'"سأل عن إمكانية الدفع بالتقسيط."', a:'hot', tip:'قريب جدًا من الشراء — ركّز على تسهيل الإجراءات.'},
-  {q:'"قال هفكر وأرجعلك."', a:'warm', tip:'اسأل عن السبب الحقيقي وراء التفكير، لا تتركها مبهمة.'},
-  {q:'"معملش رد على 3 مكالمات متتالية."', a:'cold', tip:'جرّب قناة تواصل مختلفة (واتساب / إيميل).'},
-  {q:'"طلب مقارنة بينك وبين منافس."', a:'hot', tip:'وضّح نقاط تميّزك بأرقام وأمثلة ملموسة.'},
-  {q:'"قال الميزانية مش متاحة دلوقتي."', a:'cold', tip:'حافظ على التواصل الخفيف لحين تغيّر الظرف.'},
-  {q:'"بيرد بسرعة على كل رسالة."', a:'hot', tip:'تحرك بسرعة — الفرصة ساخنة وممكن تبرد بسرعة كمان.'},
-  {q:'"معرفش حاجة عن الشركة أصلًا."', a:'dead', tip:'يحتاج تأهيل من الصفر، أو استبعاد من الوقت الحالي.'},
-];
-const RP_PAIRS = [
-  {wrong:'"حضرتك شوفت العرض؟"', right:'"إيه الحاجة اللي واقفة بينك وبين القرار؟"'},
-  {wrong:'"لسه فاكرني؟"', right:'"إيه اللي اتغيّر من آخر مرة اتكلمنا فيها؟"'},
-  {wrong:'"هل اتخذت قرار؟"', right:'"لو قررنا نبدأ النهارده، هتحتاج فترة تنفيذ قد إيه؟"'},
-];
-const PRIORITY_TASKS = [
-  'Follow-up مع عميل ساخن',
-  'تحديث الـ CRM',
-  'اجتماع فريق داخلي',
-  'الرد على شكوى عميل',
-  'إرسال تقرير أسبوعي',
-  'التواصل مع Lead جديد',
-  'تدريب داخلي',
-  'متابعة عرض سعر مُرسل',
-];
-const LAST_HOUR_ITEMS = ['Lead ساخن','CRM','Report','Meeting داخلي','Complaint','Proposal','Prospect جديد'];
-const TL_HOURS = ['8-9','9-10','10-11','11-12','12-1','1-2','2-3','3-4','4-5'];
-const TL_COLORS = [
-  {k:'sell', ic:'🔴', label:'بيع', c:'#E4572E'},
-  {k:'crm', ic:'🟢', label:'CRM', c:'#3FA796'},
-  {k:'meet', ic:'🟡', label:'اجتماعات', c:'#E8A93D'},
-  {k:'wait', ic:'🔵', label:'انتظار', c:'#3E7CB1'},
-];
-const BUILD_DAY_OPTS = ['— فاضي —','Prospecting','Follow-up','CRM','اجتماع','Proposal','استراحة','Reports'];
-const CRITIQUE_QS = [
-  'ليه حاطط Prospecting بعد الغدا مش الصبح؟',
-  'ليه عامل Follow-up طول اليوم من غير وقفة؟',
-  'ليه فاتح الواتساب كل ساعة؟',
-  'فين وقت الـ Deep Work للـ Proposals المهمة؟',
-];
-
-const ACTIVITIES = [
-  {id:1, part:1, icon:'💵', title:'اشترِ يومك', tag:'Ice Breaker · 10 دقائق',
-   instr:'كل فريق معاه <b>100$</b> يشتريهم من أنشطة يومه. بعد التوزيع، اسأل: مين صرف فلوسه على حاجات مش بتجيب مبيعات؟',
-   type:'budget', total:100, unit:'$', items:BUY_DAY_ITEMS,
-   message:'أنت بالفعل بتستثمر وقتك... السؤال الوحيد: بتستثمره في إيه؟'},
-
-  {id:2, part:1, icon:'🗺️', title:'ارسم الـ Pipeline', tag:'10 دقائق',
-   instr:'هات ورقة A4، وخلّي كل فريق يرسم Pipeline شركته. بعدين بدّلوا الأوراق بين الفرق واسأل كل فريق: <b>فين نقطة الضعف؟</b>',
-   type:'discussion',
-   prompts:['ابدأ بعدد الليدز الشهري.', 'ارسم كل مرحلة بعرض يعبّر عن حجمها.', 'حدد المرحلة اللي بيضيع فيها أكبر عدد.'],
-   message:'كل Pipeline فيها عنق زجاجة.'},
-
-  {id:3, part:1, icon:'🔍', title:'مين قتل الـ Pipeline؟', tag:'اللعبة الأقوى',
-   instr:'اعرض الفانل ده على الفرق، واسأل كل فريق يحدد توقعه لسبب المشكلة، بعدين اكشف الإجابة الحقيقية.',
-   type:'funnel',
-   message:'أوعى تعالج المرحلة الغلط.'},
-
-  {id:4, part:1, icon:'📋', title:'الـ Activity الحقيقي', tag:'تأمل سريع',
-   instr:'كل واحد يطلع الـ CRM بتاعه أو يكتب من ذاكرته عدد العملاء في كل مرحلة.',
-   type:'discussion',
-   prompts:['كام عميل عندك في كل مرحلة دلوقتي؟', 'لو وقفت شغل أسبوع كامل من النهارده... هتقفل كام عملية؟', 'لو معرفش الإجابة... يبقى انت مش عارف الـ Pipeline بتاعك.'],
-   message:'لو مش عارف تجاوبها بسرعة... يبقى مش عارف الـ Pipeline.'},
-
-  {id:5, part:1, icon:'🚗', title:'مزاد معدلات التحويل', tag:'Conversion Rates',
-   instr:'كل Lead بـ100 جنيه، وكل فريق بيشتري Leads. حرّك عدد الليدز والـ Conversion وشوف الفرق في عدد العربيات المباعة.',
-   type:'conversion',
-   message:'تحسين التحويل أحيانًا أغلى من زيادة الليدز... وأحيانًا العكس.'},
-
-  {id:6, part:1, icon:'🩺', title:'لعبة الطبيب', tag:'تشخيص فقط — ممنوع حلول',
-   instr:'كل فريق يستلم نفس الحالة. المطلوب <b>تشخيص فقط</b>، أي حل مقترح يتم رفضه فورًا.',
-   type:'case',
-   message:'لا تعالج قبل ما تشخّص.'},
-
-  {id:7, part:1, icon:'🌡️', title:'Hot / Warm / Cold', tag:'تصنيف العملاء',
-   instr:'اعرض كل كارت على حدة، وخلّي كل فريق يصنّفه: Hot / Warm / Cold / Dead. بعد كل تصنيف ناقش السبب.',
-   type:'classify',
-   message:'كل عميل له طريقة متابعة مختلفة.'},
-
-  {id:8, part:1, icon:'🎭', title:'Follow-up — Role Play', tag:'تمثيل حي',
-   instr:'اختار زوج متطوعين: واحد عميل وواحد بائع. جرّب الجملة الغلط الأول، والجمهور يقول "غلط"، بعدين كرّرها بالجملة الصح.',
-   type:'roleplay',
-   message:'المتابعة تحرّك... مش تطمّن.'},
-
-  {id:9, part:2, icon:'⏱️', title:'انشغال ولا إنتاج؟', tag:'Ice Breaker — الجزء الثاني',
-   instr:'اسأل: مين قال "النهارده كان زحمة جدًا" آخر مرة؟ (كل الأيدي هترفع). بعدين اسأل: كام واحد حقق Target اليوم؟',
-   type:'discussion',
-   prompts:['ارفع إيدك لو قلت "النهارده كان زحمة جدًا".', 'كام واحد فيكم حقق Target النهارده بالظبط؟', 'ليه في فرق بين السؤالين؟'],
-   message:'الانشغال لا يساوي الإنتاج.'},
-
-  {id:10, part:2, icon:'🎨', title:'لوّن يومك', tag:'Timeline تفاعلي',
-   instr:'لوّن كل ساعة من يومك حسب النشاط الحقيقي اللي بتعمله فيها، وشوف الصورة الكاملة في الآخر.',
-   type:'timeline',
-   message:'الصورة اللي هتشوفها دلوقتي... هي يومك الحقيقي، مش اللي متخيله.'},
-
-  {id:11, part:2, icon:'⏳', title:'مزاد الوقت', tag:'480 دقيقة — 16 بلوك',
-   instr:'يوم العمل مقسّم لـ 16 بلوك (كل بلوك نص ساعة = 480 دقيقة). اضغط على أي بلوك لتلوّنه بالنشاط، وكرر لغاية ما توزع اليوم كله. لاحظ: <b>Prospecting مش موجود في القايمة أصلًا.</b>',
-   type:'timeblocks', blockMinutes:30, blockCount:16, startHour:8, cats:TIME_BLOCK_CATS,
-   message:'الفرق هتتفاجئ إنهم اشتروا حاجات كتير... بس نسيوا الـ Prospecting.'},
-
-  {id:12, part:2, icon:'📌', title:'ترتيب الأولويات', tag:'15 مهمة → رتبها',
-   instr:'رتّب المهام دي حسب الأهمية بالنسبة لك، بعدين ناقش: ليه رتبتها كده؟',
-   type:'rank', items:PRIORITY_TASKS,
-   frameworkTitle:'النموذج: Impact × Urgency × Conversion',
-   message:'الأولوية مش اللي حسّها الأقرب، الأولوية اللي أثرها الأكبر.'},
-
-  {id:13, part:2, icon:'🚨', title:'الساعة الأخيرة', tag:'الشركة هتقفل بعد ساعة',
-   instr:'قدامك المهام دي، الشركة هتقفل بعد ساعة واحدة بس. رتّبها.',
-   type:'rank', items:LAST_HOUR_ITEMS,
-   message:'الأولوية ليست ما يصرخ... الأولوية ما يحقق نتيجة.'},
-
-  {id:14, part:2, icon:'🏗️', title:'بناء اليوم', tag:'صمم جدولك ثم واجه النقد',
-   instr:'وزّع الأنشطة على ساعات يومك، بعدين هنسأل أسئلة نقدية عن اختياراتك.',
-   type:'buildday',
-   message:'أقوى من أي Template جاهز: الجدول اللي بنيته بنفسك وناقشته.'},
-
-  {id:15, part:2, icon:'✍️', title:'Not To Do', tag:'التزام مكتوب',
-   instr:'اكتب 3 حاجات هتوقف عن عملها من بكرة. زميلك هيوقّع كشاهد، وهيحاسبك بعد أسبوع.',
-   type:'commitment',
-   message:'البائع الفاشل يملأ يومه بالأنشطة... والبائع المحترف يملأ الـ Pipeline بالحركة.'},
-];
-
-/* ========================= STATE ========================= */
-let state = load() || {teams:[], view:'setup', activityIndex:0, setupCount:3, ephemeral:{}};
-function save(){ localStorage.setItem('pipelineWorkshop', JSON.stringify(state)); }
-function load(){ try{ return JSON.parse(localStorage.getItem('pipelineWorkshop')); }catch(e){ return null; } }
-function eph(key, def){ if(state.ephemeral[key]===undefined) state.ephemeral[key]=def; return state.ephemeral[key]; }
-function setEph(key,val){ state.ephemeral[key]=val; }
-
-const app = document.getElementById('app');
-function render(){ save(); app.innerHTML = state.view==='setup' ? setupScreen() : mainScreen(); const bd=document.getElementById('sidebarBackdrop'); if(bd) bd.classList.remove('show'); attachHandlers(); }
-
-/* ========================= SETUP ========================= */
-function setupScreen(){
-  const names = eph('setupNames', Array.from({length:state.setupCount}, (_,i)=>''));
-  const rows = names.map((n,i)=>`<input data-team-name="${i}" style="--tc:${TEAM_COLORS[i]}" maxlength="18" placeholder="اسم الفريق ${i+1}" value="${n||''}">`).join('');
-  return `
-  <div class="setup">
-    <div class="hero-icon">🏆</div>
-    <h1>ورشة إدارة الـ Pipeline والوقت</h1>
-    <p class="sub">أدوات تفاعلية حية لتحويل محاضرة المبيعات لمنافسة مستمرة على مدار 3 ساعات — سكوربورد حي، ألعاب تشخيص، مزادات، وتصنيف عملاء.</p>
-    <div class="stepper-row">
-      <button id="teamMinus">−</button>
-      <div><div class="count">${state.setupCount}</div><div style="font-size:11px;color:var(--dim)">فرق</div></div>
-      <button id="teamPlus">+</button>
-    </div>
-    <div class="team-inputs">${rows}</div>
-    <button class="btn-primary" id="startBtn">ابدأ الورشة 🚀</button>
-  </div>`;
-}
-
-/* ========================= SHELL ========================= */
-function sortedTeams(){ return state.teams.map((t,i)=>({...t, idx:i})).sort((a,b)=>b.score-a.score); }
-function scoreStrip(){
-  const ranked = sortedTeams();
-  const medals = ['🥇','🥈','🥉'];
-  return ranked.map((t,pos)=>`
-    <div class="chip ${pos===0 && t.score>0 ?'lead':''}">
-      <span class="dot" style="background:${t.color}"></span>
-      <b>${t.name}</b>
-      ${pos<3 && t.score>0 ? `<span class="medal">${medals[pos]}</span>` : ''}
-      <span class="pts">${t.score}</span>
-      <button class="plus" data-quickpt="${t.idx}">+</button>
-    </div>`).join('');
-}
-function sidebarNav(){
-  const p1 = ACTIVITIES.filter(a=>a.part===1), p2 = ACTIVITIES.filter(a=>a.part===2);
-  const item = (a)=>{
-    const done = (state.ephemeral.visited||[]).includes(a.id);
-    const active = state.activityIndex === ACTIVITIES.indexOf(a);
-    return `<div class="navitem ${active?'active':''} ${done?'done':''}" data-goto="${ACTIVITIES.indexOf(a)}">
-      <span class="n">${done?'':a.id}</span><span>${a.icon} ${a.title}</span></div>`;
-  };
-  return `<h4>الجزء الأول — Pipeline</h4>${p1.map(item).join('')}<h4>الجزء الثاني — إدارة الوقت</h4>${p2.map(item).join('')}`;
-}
-function leaderBadge(){
-  const ranked = sortedTeams();
-  if(!ranked.length) return '';
-  const top = ranked[0];
-  return `<div class="leader-badge"><span class="lbl">🥇 المتصدر</span><b class="nm">${top.name}</b><span>${top.score}</span></div>`;
-}
-function mainScreen(){
-  const a = ACTIVITIES[state.activityIndex];
-  return `
-  <div class="topbar">
-    <button class="iconbtn hamburger" id="hamBtn">☰</button>
-    <div class="brand"><div class="mark">🏆</div><div class="txt"><h1>ورشة الـ Pipeline</h1><span>سكوربورد حي</span></div></div>
-    <div class="score-strip">${scoreStrip()}</div>
-    ${leaderBadge()}
-    <div class="top-actions">
-      <button class="iconbtn" id="editTeamsBtn" title="تعديل الفرق">✏️</button>
-      <button class="iconbtn" id="flipBtn" title="عرض السكوربورد بالكامل">📺</button>
-      <button class="iconbtn" id="resetBtn" title="إعادة ضبط">↺</button>
-    </div>
-  </div>
-  <div class="body-wrap">
-    <div class="sidebar" id="sidebar">
-      <div class="sidebar-close">القائمة<button id="sidebarCloseBtn">✕</button></div>
-      ${sidebarNav()}
-    </div>
-    <div class="main"><div class="wrap">${activityBody(a)}</div></div>
-  </div>
-  ${flipOverlay()}
-  ${editTeamsModal()}`;
-}
-function editTeamsModal(){
-  const rows = state.teams.map((t,i)=>`
-    <div class="edit-team-row">
-      <input data-edit-name="${i}" style="--tc:${t.color}" maxlength="18" value="${t.name}">
-      <button class="rm" data-edit-remove="${i}" ${state.teams.length<=2?'disabled style="opacity:.25"':''}>✕</button>
-    </div>`).join('');
-  return `
-  <div class="modal-overlay ${eph('editModalOpen',false)?'show':''}" id="editModal">
-    <div class="modal-box">
-      <h3>✏️ تعديل الفرق</h3>
-      <div id="editRows">${rows}</div>
-      <button class="edit-add-btn" id="addTeamBtn" ${state.teams.length>=6?'disabled style="opacity:.4"':''}>+ إضافة فريق جديد</button>
-      <div class="modal-actions">
-        <button class="btn-ghost" id="editCancel">إلغاء</button>
-        <button class="btn-primary" id="editSave" style="padding:11px 26px;">حفظ</button>
-      </div>
-    </div>
-  </div>`;
-}
-
-/* ========================= ACTIVITY RENDER DISPATCH ========================= */
-function activityBody(a){
-  markVisited(a.id);
-  let inner = '';
-  switch(a.type){
-    case 'budget': inner = renderBudget(a); break;
-    case 'timeblocks': inner = renderTimeBlocks(a); break;
-    case 'discussion': inner = renderDiscussion(a); break;
-    case 'funnel': inner = renderFunnel(a); break;
-    case 'conversion': inner = renderConversion(a); break;
-    case 'case': inner = renderCase(a); break;
-    case 'classify': inner = renderClassify(a); break;
-    case 'roleplay': inner = renderRoleplay(a); break;
-    case 'timeline': inner = renderTimeline(a); break;
-    case 'rank': inner = renderRank(a); break;
-    case 'buildday': inner = renderBuildDay(a); break;
-    case 'commitment': inner = renderCommitment(a); break;
-    default: inner = '';
-  }
-  const idx = ACTIVITIES.indexOf(a);
-  return `
-    <div class="part-tag">${a.part===1?'الجزء الأول 🔄 Pipeline':'الجزء الثاني ⏳ إدارة الوقت'} · نشاط ${a.id} من ${ACTIVITIES.length}</div>
-    <div class="activity-head">
-      <div class="ic">${a.icon}</div>
-      <h2>${a.title}</h2>
-      <div class="tagline">${a.tag}</div>
-    </div>
-    <button class="instr-toggle" id="instrToggle">🎤 اعرض تعليمات المدرب</button>
-    <div class="instr" id="instrBox">🎤 <b>تعليمات الفاسيليتيتور:</b> ${a.instr}</div>
-    ${inner}
-    <div class="card">
-      <button class="msg-toggle" id="msgToggle">💡 اكشف "الرسالة"</button>
-      <div class="msg-box" id="msgBox">${a.message}</div>
-    </div>
-    ${awardFooter(a.id)}
-    <div class="nav-footer">
-      <button class="btn-ghost" data-nav="-1" ${idx===0?'disabled style="opacity:.3"':''}>→ السابق</button>
-      <button class="btn-primary" data-nav="1">${idx===ACTIVITIES.length-1?'إنهاء الورشة 🏁':'التالي ←'}</button>
-    </div>`;
-}
-function markVisited(id){ const v = eph('visited', []); if(!v.includes(id)){ v.push(id); } }
-function awardFooter(activityId){
-  return `<div class="award-footer">
-    <span class="lbl">🎯 امنح نقطة على هذا النشاط:</span>
-    ${state.teams.map((t,i)=>`<button class="award-team-btn" data-award="${i}"><span class="d" style="background:${t.color}"></span>${t.name}</button>`).join('')}
-  </div>`;
-}
-
-/* ---- budget allocator ---- */
-function renderBudget(a){
-  const key = 'budget_'+a.id;
-  const qty = eph(key, Object.fromEntries(a.items.map(it=>[it.id,0])));
-  const spent = a.items.reduce((s,it)=>s+it.cost*qty[it.id],0);
-  const remain = a.total - spent;
-  return `
-  <div class="card">
-    <div class="budget-head">
-      <div class="budget-remain">المتبقي: <b>${remain}${a.unit}</b> / ${a.total}${a.unit}</div>
-      <button class="btn-ghost" id="revealBudget" style="padding:8px 16px;font-size:12px;">اكشف النتيجة</button>
-    </div>
-    <div class="budget-bar"><div class="fill" style="width:${Math.max(0,(spent/a.total)*100)}%"></div></div>
-    ${a.items.map(it=>`
-      <div class="item-row">
-        <div class="lbl">${it.icon} <b>${it.label}</b> <span class="cost">(${it.cost}${a.unit})</span></div>
-        <div class="qty-ctrl">
-          <button data-budg-minus="${it.id}">−</button>
-          <span>${qty[it.id]}</span>
-          <button data-budg-plus="${it.id}" data-cost="${it.cost}" data-budgkey="${key}">+</button>
-        </div>
-      </div>`).join('')}
-    <div id="budgetResult"></div>
-  </div>`;
-}
-
-/* ---- discussion ---- */
-function renderDiscussion(a){
-  return `<div class="card"><h3>🗣️ أسئلة للنقاش</h3>
-    ${a.prompts.map(p=>`<div class="critique-q">${p}</div>`).join('')}
-  </div>`;
-}
-
-/* ---- funnel: who killed the pipeline (editable) ---- */
-function funnelKillerIdx(stages){
-  let maxDrop=-1, idx=1;
-  for(let i=1;i<stages.length;i++){
-    const prev=stages[i-1]||0, cur=stages[i]||0;
-    const drop = prev>0 ? (1-(cur/prev)) : 0;
-    if(drop>maxDrop){ maxDrop=drop; idx=i; }
-  }
-  return idx;
-}
-function renderFunnel(a){
-  const stages = eph('funnelStages', [...FUNNEL_PRESETS[0].stages]);
-  const revealed = eph('funnelRevealed', false);
-  const editMode = eph('funnelEditMode', false);
-  const maxV = Math.max(...stages, 1);
-  const killerIdx = funnelKillerIdx(stages);
-  const correctPair = `${FUNNEL_LABELS[killerIdx-1]} → ${FUNNEL_LABELS[killerIdx]}`;
-  const pairOptions = FUNNEL_LABELS.slice(1).map((l,i)=>`${FUNNEL_LABELS[i]} → ${l}`);
-  const options = ['التسعير','الجودة', ...pairOptions];
-
-  const rows = FUNNEL_LABELS.map((label,i)=>{
-    const val = stages[i]||0;
-    const drop = i>0 && stages[i-1]>0 ? Math.round((1-(val/stages[i-1]))*100) : 0;
-    const isKiller = i===killerIdx;
-    const valueDisplay = editMode
-      ? `<input type="number" min="0" class="funnel-input" data-funnel-idx="${i}" value="${val}">`
-      : `<span class="funnel-value">${val}</span>`;
-    return `<div class="funnel-row ${revealed && isKiller?'killer':''}">
-      <div class="flabel"><span>${label}</span>
-        <span>${i>0?`<span class="drop-tag">↓ ${drop}% </span>`:''}${valueDisplay}</span>
-      </div>
-      <div class="fbar"><div style="width:${(val/maxV)*100}%"></div></div>
-    </div>`;
-  }).join('');
-
-  const presetBtns = FUNNEL_PRESETS.map((p,i)=>`<button class="btn-ghost preset-btn" data-preset="${i}" style="font-size:11.5px;padding:7px 12px;">${p.name}</button>`).join('');
-
-  const guesses = eph('funnelGuesses', {});
-  const teamGuessRows = state.teams.map((t,i)=>`
-    <div class="team-guess-row">
-      <span class="dot" style="background:${t.color};width:9px;height:9px;border-radius:50%;display:inline-block"></span>
-      <b style="font-size:12.5px">${t.name}</b>
-      <select data-guess="${i}">
-        <option value="">اختار توقعهم...</option>
-        ${options.map(o=>`<option ${guesses[i]===o?'selected':''}>${o}</option>`).join('')}
-      </select>
-    </div>`).join('');
-
-  return `
-  <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
-      <h3 style="margin:0;">📉 الفانل</h3>
-      <button class="btn-ghost facilitator-only-btn" id="funnelEditToggle" style="font-size:11.5px;padding:7px 12px;">${editMode?'✅ تم — إخفاء أدوات التعديل':'🔧 وضع المدرب: عدّل الأرقام'}</button>
-    </div>
-    ${editMode ? `
-    <div class="facilitator-zone">
-      <div style="font-size:11px;color:var(--dim);margin-bottom:8px;">👁️‍🗨️ الأزرار دي للمدرب بس — هتتخفي تاني لما تدوس "تم".</div>
-      <div style="display:flex;justify-content:flex-end;margin-bottom:8px;">
-        <button class="btn-ghost" id="funnelClear" style="font-size:11.5px;padding:7px 12px;">امسح الكل</button>
-      </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">${presetBtns}</div>
-    </div>`:''}
-    ${rows}
-  </div>
-  <div class="card">
-    <h3>🗳️ توقعات الفرق</h3>
-    ${teamGuessRows}
-    <button class="btn-primary" id="revealKiller" style="margin-top:12px;padding:10px 22px;font-size:13px;">اكشف الحقيقة</button>
-    ${revealed ? `
-      <div class="vote-options" style="margin-top:16px;">
-        ${options.map(o=>`<div class="vote-opt ${o===correctPair?'correct':'wrong-x'}">${o}${o===correctPair?' ✅':''}</div>`).join('')}
-      </div>
-      <p style="font-size:12.5px;color:var(--dim);margin-top:10px">القاتل الحقيقي: انهيار ${Math.round((1-(stages[killerIdx]/(stages[killerIdx-1]||1)))*100)}% بين ${FUNNEL_LABELS[killerIdx-1]} و ${FUNNEL_LABELS[killerIdx]} — مش بالضرورة السعر أو الجودة.</p>
-    `:''}
-  </div>`;
-}
-
-/* ---- conversion simulator ---- */
-function renderConversion(a){
-  const leads = eph('convLeads', 50);
-  const rate = eph('convRate', 10);
-  const sold = Math.round(leads*rate/100);
-  return `
-  <div class="card">
-    <h3>🚗 محاكاة معدل التحويل</h3>
-    <div class="grid2">
-      <div>
-        <label style="font-size:12.5px;color:var(--dim)">عدد الـ Leads المشتراة: <b style="color:var(--gold)">${leads}</b></label>
-        <input type="range" min="10" max="200" value="${leads}" id="convLeadsSlider" style="width:100%">
-      </div>
-      <div>
-        <label style="font-size:12.5px;color:var(--dim)">معدل التحويل: <b style="color:var(--gold)">${rate}%</b></label>
-        <input type="range" min="5" max="40" value="${rate}" id="convRateSlider" style="width:100%">
-      </div>
-    </div>
-    <div style="text-align:center;margin-top:22px;">
-      <div style="font-size:13px;color:var(--dim);margin-bottom:6px;">عدد العربيات المباعة</div>
-      <div style="font-family:'Cairo';font-size:54px;font-weight:900;color:var(--gold);">${sold}</div>
-      <div style="font-size:22px;margin-top:6px;">${'🚗'.repeat(Math.min(sold,25))}${sold>25?' …':''}</div>
-    </div>
-    <div style="text-align:center;margin-top:16px;">
-      <button class="btn-ghost" id="convPreset" style="font-size:12.5px;">جرّب: نفس الليدز، Conversion من 10% → 20%</button>
-    </div>
-  </div>`;
-}
-
-/* ---- doctor case ---- */
-function renderCase(a){
-  const revealed = eph('caseRevealed', false);
-  return `
-  <div class="card">
-    <h3>🩺 كارت الحالة</h3>
-    <div class="grid2" style="margin-bottom:14px;">
-      <div class="item-row" style="justify-content:flex-start;gap:10px;"><span>⏰</span><span>10 ساعات عمل يوميًا</span></div>
-      <div class="item-row" style="justify-content:flex-start;gap:10px;"><span>📇</span><span>120 Lead شهريًا</span></div>
-      <div class="item-row" style="justify-content:flex-start;gap:10px;"><span>📉</span><span>Closing Rate = 2%</span></div>
-      <div class="item-row" style="justify-content:flex-start;gap:10px;"><span>📵</span><span>Follow-up ضعيف جدًا</span></div>
-      <div class="item-row" style="justify-content:flex-start;gap:10px;"><span>🗂️</span><span>CRM فاضي تمامًا</span></div>
-    </div>
-    <div style="background:rgba(228,87,46,.12);border:1px solid var(--red);border-radius:9px;padding:10px 14px;font-size:13px;font-weight:700;color:#ffb69c;text-align:center;">
-      🚫 ممنوع أي حل مقترح — تشخيص فقط
-    </div>
-    <button class="btn-ghost" id="caseReveal" style="margin-top:14px;">اكشف أسئلة التشخيص الصحيحة</button>
-    ${revealed?`
-    <div class="tip-box show" style="margin-top:12px;">
-      هل المشكلة في <b>كمية</b> الليدز ولا <b>جودتهم</b>؟ هل الفشل في <b>المتابعة</b> ولا في <b>الإقفال</b>؟ هل غياب الـ CRM هو السبب ولا النتيجة؟
-    </div>`:''}
-  </div>`;
-}
-
-/* ---- classify hot/warm/cold ---- */
-function renderClassify(a){
-  const idx = eph('classifyIdx', 0);
-  const answers = eph('classifyAns', {});
-  const c = CLASSIFY_CARDS[idx];
-  const chosen = answers[idx];
-  const dots = CLASSIFY_CARDS.map((_,i)=>`<span class="${i<idx || (i===idx && chosen)?'done':''}"></span>`).join('');
-  const labels = {hot:'🔴 Hot',warm:'🟡 Warm',cold:'🔵 Cold',dead:'⚫ Dead'};
-  return `
-  <div class="card">
-    <div class="deck-progress">${dots}</div>
-    <div class="classify-card">
-      <div class="quote">${c.q}</div>
-      <div class="classify-btns">
-        ${['hot','warm','cold','dead'].map(k=>`<button class="cbtn ${chosen===k?'sel':''}" data-k="${k}" data-classify="${k}">${labels[k]}</button>`).join('')}
-      </div>
-      <div class="tip-box ${chosen?'show':''}">✅ الاقتراح: <b>${labels[c.a]}</b> — ${c.tip}</div>
-    </div>
-    <div style="display:flex;justify-content:space-between;margin-top:8px;">
-      <button class="btn-ghost" id="classifyPrev" ${idx===0?'disabled style="opacity:.3"':''}>كارت سابق</button>
-      <span style="font-size:12px;color:var(--dim);align-self:center;">${idx+1} / ${CLASSIFY_CARDS.length}</span>
-      <button class="btn-ghost" id="classifyNext" ${idx===CLASSIFY_CARDS.length-1?'disabled style="opacity:.3"':''}>كارت تالي</button>
-    </div>
-  </div>`;
-}
-
-/* ---- roleplay ---- */
-function renderRoleplay(a){
-  return `<div class="card"><h3>🎭 قبل / بعد</h3>
-    ${RP_PAIRS.map(p=>`
-    <div class="rp-pair">
-      <div class="rp-box wrong"><div class="rp-label">❌ غلط</div>${p.wrong}</div>
-      <div class="rp-arrow">←</div>
-      <div class="rp-box right"><div class="rp-label">✅ صح</div>${p.right}</div>
-    </div>`).join('')}
-  </div>`;
-}
-
-/* ---- category summary helper ---- */
-function categorySummary(counts, cats, unitEach, unitLabel){
-  const total = Object.values(counts).reduce((s,n)=>s+n,0);
-  return `<div class="cat-summary">
-    ${cats.map(c=>{
-      const n = counts[c.k]||0; const amt = n*unitEach;
-      const pct = total? Math.round((n/total)*100) : 0;
-      return `<div class="cs-row">
-        <span class="cs-lbl">${c.ic} ${c.label}</span>
-        <div class="cs-bar"><div style="width:${pct}%;background:${c.c}"></div></div>
-        <span class="cs-val">${amt} ${unitLabel}</span>
-      </div>`;
-    }).join('')}
-  </div>`;
-}
-
-/* ---- timeline colorer ---- */
-function renderTimeline(a){
-  const colors = eph('tlColors', Object.fromEntries(TL_HOURS.map(h=>[h,null])));
-  const counts = {}; TL_COLORS.forEach(c=>counts[c.k]=0);
-  Object.values(colors).forEach(k=>{ if(k && counts[k]!==undefined) counts[k]++; });
-  return `
-  <div class="card">
-    <p style="font-size:13px;color:var(--text);margin-bottom:14px;line-height:1.8;">
-      اضغط على كل ساعة من يومك واختار إيه اللي فعلًا بيحصل فيها (مش اللي المفروض يحصل). كل ضغطة بتنقّل بين اللون التالي.
-    </p>
-    <div class="tl-legend">${TL_COLORS.map(c=>`<div class="lg"><span class="sw" style="background:${c.c}"></span>${c.ic} ${c.label}</div>`).join('')}</div>
-    <div class="tl-grid">
-      ${TL_HOURS.map(h=>{
-        const cur = colors[h];
-        const cObj = TL_COLORS.find(c=>c.k===cur);
-        return `<div class="tl-slot"><div class="hr">${h}</div><div class="sq" data-tlhour="${h}" style="background:${cObj?cObj.c+'33':'var(--panel3)'};border:1.5px solid ${cObj?cObj.c:'var(--border)'}">${cObj?cObj.ic:''}</div><div class="sqlabel">${cObj?cObj.label:'—'}</div></div>`;
-      }).join('')}
-    </div>
-  </div>
-  <div class="card">
-    <h3>📊 توزيع يومك الحقيقي (بالساعات)</h3>
-    ${categorySummary(counts, TL_COLORS, 1, 'ساعة')}
-  </div>`;
-}
-
-/* ---- time blocks auction (more granular than hourly) ---- */
-function renderTimeBlocks(a){
-  const key='timeblocks';
-  const cellsState = eph(key, Array.from({length:a.blockCount}, ()=>null));
-  const counts = {}; a.cats.forEach(c=>counts[c.k]=0);
-  cellsState.forEach(k=>{ if(k && counts[k]!==undefined) counts[k]++; });
-  const filled = cellsState.filter(Boolean).length;
-  const timeLabel = (i)=>{
-    const totalMin = a.startHour*60 + i*a.blockMinutes;
-    const h = Math.floor(totalMin/60), m = totalMin%60;
-    return `${h}:${m.toString().padStart(2,'0')}`;
-  };
-  return `
-  <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
-      <h3 style="margin:0;">⏳ ${filled} / ${a.blockCount} بلوك متوزّع</h3>
-      <button class="btn-ghost" id="blocksClear" style="font-size:11.5px;padding:7px 12px;">امسح الكل</button>
-    </div>
-    <div class="tl-legend">${a.cats.map(c=>`<div class="lg"><span class="sw" style="background:${c.c}"></span>${c.ic} ${c.label}</div>`).join('')}</div>
-    <div class="block-grid">
-      ${cellsState.map((k,i)=>{
-        const cObj = a.cats.find(c=>c.k===k);
-        return `<div class="block-cell" data-blockidx="${i}" style="background:${cObj?cObj.c+'2e':'var(--panel2)'};border-color:${cObj?cObj.c:'var(--border)'}">
-          <span class="bt">${timeLabel(i)}</span>
-          <span class="bi">${cObj?cObj.ic:'＋'}</span>
-        </div>`;
-      }).join('')}
-    </div>
-  </div>
-  <div class="card">
-    <h3>📊 توزيع الـ 480 دقيقة</h3>
-    ${categorySummary(counts, a.cats, a.blockMinutes, 'د')}
-  </div>`;
-}
-
-/* ---- ranking ---- */
-function renderRank(a){
-  const key = 'rank_'+a.id;
-  const order = eph(key, [...a.items]);
-  return `
-  <div class="card">
-    <ul class="rank-list" id="rankList">
-      ${order.map((item,i)=>`
-      <li class="rank-item" data-rankidx="${i}" data-rankkey="${key}">
-        <span class="num">${i+1}</span><span>${item}</span>
-        <span class="mv">
-          <button data-rankmove="up" data-i="${i}" data-rankkey="${key}" ${i===0?'disabled style="opacity:.25"':''}>▲</button>
-          <button data-rankmove="down" data-i="${i}" data-rankkey="${key}" ${i===order.length-1?'disabled style="opacity:.25"':''}>▼</button>
-        </span>
-      </li>`).join('')}
-    </ul>
-    ${a.frameworkTitle?`<div class="tip-box show" style="margin-top:14px;">📐 <b>${a.frameworkTitle}</b> — بعد ما يرتبوا بحدسهم، اعرض الإطار وخليهم يعيدوا الترتيب بناءً عليه.</div>`:''}
-  </div>`;
-}
-
-/* ---- build day ---- */
-function renderBuildDay(a){
-  const key='buildday';
-  const slots = eph(key, Object.fromEntries(TL_HOURS.map(h=>[h,'— فاضي —'])));
-  const revealed = eph('buildRevealed', false);
-  return `
-  <div class="card">
-    <div class="slot-list">
-      ${TL_HOURS.map(h=>`
-      <div class="slot-line">
-        <span class="time">${h}</span>
-        <select data-buildslot="${h}">${BUILD_DAY_OPTS.map(o=>`<option ${slots[h]===o?'selected':''}>${o}</option>`).join('')}</select>
-      </div>`).join('')}
-    </div>
-    <button class="btn-ghost" id="critiqueBtn">🧐 ابدأ النقد</button>
-    ${revealed?`<div style="margin-top:12px;">${CRITIQUE_QS.map(q=>`<div class="critique-q">${q}</div>`).join('')}</div>`:''}
-  </div>`;
-}
-
-/* ---- commitment ---- */
-function renderCommitment(a){
-  const seconds = eph('commitTimer', 90);
-  return `
-  <div class="card">
-    <div class="commit-box">
-      <h3 style="justify-content:center;">✍️ Not To Do</h3>
-      <div class="timer" id="commitClock">${fmtTime(seconds)}</div>
-      <button class="btn-ghost" id="commitStart" style="font-size:12.5px;">${eph('commitRunning',false)?'إيقاف':'ابدأ العد التنازلي'}</button>
-      <div class="lines">
-        <div>1. .......................................................</div>
-        <div>2. .......................................................</div>
-        <div>3. .......................................................</div>
-        <div style="border:none;margin-top:10px;font-size:11.5px;">توقيع الشاهد: .....................................</div>
-      </div>
-    </div>
-  </div>`;
-}
-function fmtTime(s){ const m=Math.floor(s/60), r=s%60; return `${m}:${r.toString().padStart(2,'0')}`; }
-
-/* ========================= FLIP OVERLAY ========================= */
-function flipOverlay(){
-  const ranked = sortedTeams();
-  const finished = state.activityIndex === ACTIVITIES.length-1;
-  return `
-  <div class="flip-overlay" id="flipOverlay">
-    <h2>${finished ? '🏁 السكوربورد النهائي' : '📺 السكوربورد الحي'}</h2>
-    <div class="flip-board">
-      ${ranked.map((t,pos)=>`
-      <div class="flip-card ${pos===0 && t.score>0?'rank1':''}">
-        ${pos===0 && t.score>0?'<div class="crown">👑</div>':''}
-        <div class="fname">${t.name}</div>
-        <div class="fscore">${t.score}</div>
-      </div>`).join('')}
-    </div>
-    ${finished ? `<div class="closing-quote" style="margin-top:34px;max-width:700px;">"البائع الفاشل يملأ يومه <span>بالأنشطة</span>...<br>والبائع المحترف يملأ الـ Pipeline <span>بالحركة</span>."</div>`:''}
-    <button class="btn-primary flip-close" id="flipCloseBtn">إغلاق</button>
-  </div>`;
-}
-
-/* ========================= EVENT HANDLERS ========================= */
-function attachHandlers(){
-  if(state.view==='setup'){
-    document.getElementById('teamMinus').onclick=()=>{ if(state.setupCount>2){ state.setupCount--; eph('setupNames').length=state.setupCount; render(); } };
-    document.getElementById('teamPlus').onclick=()=>{ if(state.setupCount<6){ state.setupCount++; const n=eph('setupNames'); n.push(''); render(); } };
-    document.querySelectorAll('[data-team-name]').forEach(inp=>{
-      inp.oninput=(e)=>{ eph('setupNames')[+e.target.dataset.teamName]=e.target.value; };
-    });
-    document.getElementById('startBtn').onclick=()=>{
-      const names = eph('setupNames');
-      state.teams = Array.from({length:state.setupCount}, (_,i)=>({
-        name: (names[i] && names[i].trim()) || `فريق ${i+1}`,
-        score:0, color:TEAM_COLORS[i]
-      }));
-      state.view='main'; state.activityIndex=0; state.ephemeral={visited:[]};
-      render();
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Sales OS - نظام التشغيل الشخصي للمبيعات</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: { 400: '#fbbf24', 500: '#f59e0b', 600: '#d97706' }
+          }
+        }
+      }
     };
-    return;
-  }
+  </script>
 
-  // header
-  const ham=document.getElementById('hamBtn');
-  const sidebarEl=document.getElementById('sidebar');
-  const backdrop=document.getElementById('sidebarBackdrop');
-  const openSidebar=()=>{ sidebarEl.classList.add('open'); if(backdrop) backdrop.classList.add('show'); };
-  const closeSidebar=()=>{ sidebarEl.classList.remove('open'); if(backdrop) backdrop.classList.remove('show'); };
-  if(ham) ham.onclick=()=>{ sidebarEl.classList.contains('open') ? closeSidebar() : openSidebar(); };
-  const sidebarCloseBtn=document.getElementById('sidebarCloseBtn'); if(sidebarCloseBtn) sidebarCloseBtn.onclick=closeSidebar;
-  if(backdrop) backdrop.onclick=closeSidebar;
-  document.getElementById('flipBtn').onclick=()=>document.getElementById('flipOverlay').classList.add('show');
-  document.getElementById('flipCloseBtn').onclick=()=>document.getElementById('flipOverlay').classList.remove('show');
-  document.getElementById('resetBtn').onclick=()=>{ if(confirm('هل تريد إعادة ضبط الورشة بالكامل؟')){ localStorage.removeItem('pipelineWorkshop'); state={teams:[],view:'setup',activityIndex:0,setupCount:3,ephemeral:{}}; render(); } };
+  <!-- React 18, Babel & Supabase CDN -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 
-  // edit teams modal
-  document.getElementById('editTeamsBtn').onclick=()=>{ setEph('editBackup', JSON.parse(JSON.stringify(state.teams))); setEph('editModalOpen', true); render(); };
-  const editCancel=document.getElementById('editCancel');
-  if(editCancel) editCancel.onclick=()=>{ state.teams = eph('editBackup'); setEph('editModalOpen', false); render(); };
-  const editSave=document.getElementById('editSave');
-  if(editSave) editSave.onclick=()=>{
-    state.teams.forEach(t=>{ if(!t.name || !t.name.trim()) t.name='فريق'; });
-    setEph('editModalOpen', false); render();
-  };
-  document.querySelectorAll('[data-edit-name]').forEach(inp=>inp.oninput=(e)=>{ state.teams[+e.currentTarget.dataset.editName].name = e.currentTarget.value; save(); });
-  document.querySelectorAll('[data-edit-remove]').forEach(b=>b.onclick=(e)=>{
-    if(state.teams.length<=2) return;
-    if(!confirm('هل تريد حذف هذا الفريق ونقاطه؟')) return;
-    state.teams.splice(+e.currentTarget.dataset.editRemove,1); render();
-  });
-  const addTeamBtn=document.getElementById('addTeamBtn');
-  if(addTeamBtn) addTeamBtn.onclick=()=>{
-    if(state.teams.length>=6) return;
-    const usedColors = state.teams.map(t=>t.color);
-    const nextColor = TEAM_COLORS.find(c=>!usedColors.includes(c)) || TEAM_COLORS[state.teams.length%TEAM_COLORS.length];
-    state.teams.push({name:`فريق ${state.teams.length+1}`, score:0, color:nextColor});
-    render();
-  };
+  <!-- Google Font: Cairo for Luxury Arabic & Inter for English -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-  document.querySelectorAll('[data-quickpt]').forEach(b=>b.onclick=(e)=>awardPoint(+e.target.dataset.quickpt, e.target));
-  document.querySelectorAll('[data-goto]').forEach(b=>b.onclick=(e)=>{ state.activityIndex=+e.currentTarget.dataset.goto; state.ephemeral={visited:state.ephemeral.visited||[]}; render(); });
-  document.querySelectorAll('[data-nav]').forEach(b=>b.onclick=(e)=>{
-    const d=+e.currentTarget.dataset.nav;
-    if(state.activityIndex+d>=ACTIVITIES.length){ document.getElementById('flipOverlay').classList.add('show'); return; }
-    if(state.activityIndex+d<0) return;
-    state.activityIndex+=d; state.ephemeral={visited:state.ephemeral.visited||[]}; render();
-  });
-  document.querySelectorAll('[data-award]').forEach(b=>b.onclick=(e)=>awardPoint(+e.currentTarget.dataset.award, e.currentTarget));
+  <style>
+    :root {
+      font-family: 'Cairo', 'Inter', system-ui, -apple-system, sans-serif;
+    }
+    html[dir="ltr"] {
+      font-family: 'Inter', 'Cairo', system-ui, -apple-system, sans-serif;
+    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); }
+    ::-webkit-scrollbar-thumb { background: rgba(100, 116, 139, 0.4); border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(100, 116, 139, 0.7); }
+    .animate-fadeIn { animation: fadeIn 0.22s ease-out forwards; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .group-item:hover .reveal-on-hover { opacity: 1; }
+    .reveal-on-hover { opacity: 0; transition: opacity 0.15s ease; }
+    @media (hover: none) { .reveal-on-hover { opacity: 1; } }
+  </style>
+</head>
+<body class="bg-[#09090b] text-slate-100 antialiased selection:bg-amber-500 selection:text-slate-950 transition-colors duration-200">
+  <div id="root"></div>
 
-  const msgToggle=document.getElementById('msgToggle');
-  if(msgToggle) msgToggle.onclick=()=>document.getElementById('msgBox').classList.toggle('show');
-  const instrToggle=document.getElementById('instrToggle');
-  if(instrToggle) instrToggle.onclick=(e)=>{
-    const box=document.getElementById('instrBox'); box.classList.toggle('show');
-    e.currentTarget.textContent = box.classList.contains('show') ? '🎤 إخفاء تعليمات المدرب' : '🎤 اعرض تعليمات المدرب';
-  };
+  <script type="text/babel">
+    const { useState, useEffect, useMemo, useRef } = React;
 
-  // budget
-  document.querySelectorAll('[data-budg-plus]').forEach(b=>b.onclick=(e)=>{
-    const id=e.currentTarget.dataset.budgPlus, key=e.currentTarget.dataset.budgkey, cost=+e.currentTarget.dataset.cost;
-    const a=ACTIVITIES[state.activityIndex]; const q=eph(key);
-    const spent=a.items.reduce((s,it)=>s+it.cost*q[it.id],0);
-    if(spent+cost<=a.total){ q[id]++; render(); }
-  });
-  document.querySelectorAll('[data-budg-minus]').forEach(b=>b.onclick=(e)=>{
-    const key='budget_'+ACTIVITIES[state.activityIndex].id;
-    const q=eph(key); const id=e.currentTarget.dataset.budgMinus;
-    if(q[id]>0){ q[id]--; render(); }
-  });
-  const revealBudget=document.getElementById('revealBudget');
-  if(revealBudget) revealBudget.onclick=()=>{
-    const a=ACTIVITIES[state.activityIndex]; const key='budget_'+a.id; const q=eph(key);
-    const nonProspect = a.items.filter(it=>it.id!=='prospecting').reduce((s,it)=>s+it.cost*q[it.id],0);
-    const prospectSpend = q['prospecting']||0;
-    document.getElementById('budgetResult').innerHTML = `<div class="tip-box show" style="margin-top:12px;">
-      صرفت <b>${prospectSpend*35}${a.unit}</b> على ما يجيب عملاء جدد (Prospecting) مقابل <b>${nonProspect}${a.unit}</b> على باقي الأنشطة. وازن الصورة قدام الفريق.</div>`;
-  };
+    // ============ OPTIONAL SUPABASE CONFIGURATION ============
+    // If you want cloud syncing across devices, enter your Supabase credentials below.
+    // If left empty, Sales OS operates completely offline in LocalStorage (Zero setup needed).
+    const SUPABASE_URL = "";
+    const SUPABASE_ANON_KEY = "";
+    const SUPABASE_READY = !!(SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase);
+    const supabaseClient = SUPABASE_READY ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
-  // funnel
-  const revealKiller=document.getElementById('revealKiller');
-  if(revealKiller) revealKiller.onclick=()=>{ setEph('funnelRevealed',true); render(); };
-  document.querySelectorAll('[data-guess]').forEach(s=>s.onchange=(e)=>{
-    const g=eph('funnelGuesses'); g[e.currentTarget.dataset.guess]=e.currentTarget.value;
-  });
-  document.querySelectorAll('[data-funnel-idx]').forEach(inp=>inp.oninput=(e)=>{
-    const stages=eph('funnelStages'); stages[+e.currentTarget.dataset.funnelIdx] = Math.max(0, +e.currentTarget.value || 0);
-    setEph('funnelRevealed', false); setEph('funnelGuesses', {});
-    save();
-    // live-update bars/labels without full re-render so the number input keeps focus
-    const idxChanged = +e.currentTarget.dataset.funnelIdx;
-    const maxV = Math.max(...stages, 1);
-    document.querySelectorAll('.funnel-row').forEach((row,i)=>{
-      const val = stages[i]||0;
-      const drop = i>0 && stages[i-1]>0 ? Math.round((1-(val/stages[i-1]))*100) : 0;
-      const dropTag = row.querySelector('.drop-tag'); if(dropTag) dropTag.textContent = `↓ ${drop}% `;
-      const bar = row.querySelector('.fbar > div'); if(bar) bar.style.width = (val/maxV*100)+'%';
-      if(i!==idxChanged){ const inp2=row.querySelector('input'); if(inp2) inp2.value = val; }
-    });
-  });
-  document.querySelectorAll('[data-preset]').forEach(b=>b.onclick=(e)=>{
-    const p=FUNNEL_PRESETS[+e.currentTarget.dataset.preset];
-    setEph('funnelStages',[...p.stages]); setEph('funnelRevealed',false); setEph('funnelGuesses',{}); render();
-  });
-  const funnelClear=document.getElementById('funnelClear');
-  if(funnelClear) funnelClear.onclick=()=>{ setEph('funnelStages',[0,0,0,0,0]); setEph('funnelRevealed',false); setEph('funnelGuesses',{}); render(); };
-  const funnelEditToggle=document.getElementById('funnelEditToggle');
-  if(funnelEditToggle) funnelEditToggle.onclick=()=>{ setEph('funnelEditMode', !eph('funnelEditMode')); render(); };
+    // ============ LOCAL STORAGE KEYS ============
+    const LS_ACCOUNTS_KEY = 'sales_os_accounts';
+    const LS_SESSION_KEY = 'sales_os_session';
+    const LS_DATA_PREFIX = 'sales_os_data:';
+    const LS_LANG_KEY = 'sales_os_lang';
+    const LS_GEMINI_KEY = 'sales_os_gemini_key';
+    const GUEST_ID = 'guest_demo_user';
 
-  // conversion
-  const cl=document.getElementById('convLeadsSlider'); if(cl) cl.oninput=(e)=>{ setEph('convLeads',+e.target.value); render(); };
-  const cr=document.getElementById('convRateSlider'); if(cr) cr.oninput=(e)=>{ setEph('convRate',+e.target.value); render(); };
-  const cp=document.getElementById('convPreset'); if(cp) cp.onclick=()=>{ setEph('convRate',10); render(); setTimeout(()=>{ setEph('convRate',20); render(); },900); };
+    // Audio Chime synthesizer via Web Audio API (Zero external assets needed)
+    function playChimeSound() {
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const now = ctx.currentTime;
+        const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+        notes.forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now + idx * 0.12);
+          gain.gain.setValueAtTime(0.2, now + idx * 0.12);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.12 + 0.35);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now + idx * 0.12);
+          osc.stop(now + idx * 0.12 + 0.35);
+        });
+      } catch (e) {
+        // AudioContext might be blocked until user gesture, safely ignore
+      }
+    }
 
-  // case
-  const caseReveal=document.getElementById('caseReveal'); if(caseReveal) caseReveal.onclick=()=>{ setEph('caseRevealed',true); render(); };
+    const Icon = ({ name, className = "w-4 h-4", flip = false }) => {
+      const icons = {
+        compass: <path d="m16.24 7.76-1.8 4.38 4.38 1.8-1.8-4.38ZM12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16Zm-2.24-5.76 1.8-4.38-4.38-1.8 1.8 4.38Z"/>,
+        dashboard: <path d="M4 4h6v8H4zm10 0h6v4h-6zm0 6h6v10h-6zM4 14h6v6H4z"/>,
+        crosshair: <path d="M12 2v4m0 12v4M2 12h4m12 0h4m-10 6a6 6 0 1 0 0-12 6 6 0 0 0 0 12z"/>,
+        bookMarked: <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a2.5 2.5 0 0 1 0-5H20M10 2v8l2.5-1.5L15 10V2"/>,
+        repeat: <path d="m17 2 4 4-4 4M3 11v-1a4 4 0 0 1 4-4h14M7 22l-4-4 4-4M21 13v1a4 4 0 0 1-4 4H3"/>,
+        kanban: <path d="M6 3v18M12 3v18M18 3v18"/>,
+        brain: <path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/>,
+        sparkles: <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>,
+        search: <path d="m21 21-4.35-4.35M19 11a8 8 0 1 1-16 0 8 8 0 0 1 16 0z"/>,
+        languages: <path d="m5 8 6 6M4 14l6-6 2 3M2 5h12M7 2v3M22 22l-5-10-5 10M14 18h6"/>,
+        sun: <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10z"/>,
+        moon: <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>,
+        clock: <path d="M12 6v6l4 2M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z"/>,
+        checkCircle: <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14M22 4 12 14.01l-3-3"/>,
+        flame: <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 3.5z"/>,
+        chevronRight: <path d="m9 18 6-6-6-6"/>,
+        chevronDown: <path d="m6 9 6 6 6-6"/>,
+        check: <path d="M20 6 9 17l-5-5"/>,
+        lightbulb: <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1.3.5 2.6 1.5 3.5.8.8 1.3 1.5 1.5 2.5M9 18h6M10 22h4"/>,
+        plus: <path d="M12 5v14M5 12h14"/>,
+        x: <path d="M18 6 6 18M6 6l12 12"/>,
+        play: <path d="m6 3 14 9-14 9V3z"/>,
+        pause: <path d="M6 4h4v16H6zm8 0h4v16h-4z"/>,
+        rotateCcw: <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8M3 3v5h5"/>,
+        bot: <path d="M12 8V4M8 2h8M12 18v4M8 22h8M5 11h14a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2zM9 15h.01M15 15h.01"/>,
+        phoneCall: <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>,
+        shieldAlert: <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10zM12 8v4M12 16h.01"/>,
+        note: <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M9 13h6M9 17h6"/>,
+        target: <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 16a6 6 0 1 1 0-12 6 6 0 0 1 0 12zm0-8a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/>,
+        calculator: <path d="M6 2h12a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1zM8 6h8M8 10h.01M12 10h.01M16 10h.01M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01"/>,
+        arrowRight: <path d="M5 12h14M13 6l6 6-6 6"/>,
+        trash: <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-.87 14.14A2 2 0 0 1 16.14 22H7.86a2 2 0 0 1-1.99-1.86L5 6h14ZM10 11v6M14 11v6"/>,
+        grid: <path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>,
+        tag: <path d="M12.59 2.59A2 2 0 0 0 11.17 2H4a2 2 0 0 0-2 2v7.17a2 2 0 0 0 .59 1.41l8.83 8.83a2 2 0 0 0 2.83 0l7.17-7.17a2 2 0 0 0 0-2.83l-8.83-8.82ZM7 7h.01"/>,
+        user: <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"/>,
+        key: <path d="m21 2-2 2m-1.5 1.5L14 9M3 21l3-3m0 0 2-2m-2 2-2-2m4 4-2-2m8-8a5.5 5.5 0 1 0-7.78-7.78 5.5 5.5 0 0 0 7.78 7.78Z"/>
+      };
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+          strokeLinecap="round" strokeLinejoin="round" className={className} style={flip ? { transform: 'scaleX(-1)' } : undefined}>
+          {icons[name] || <circle cx="12" cy="12" r="10" />}
+        </svg>
+      );
+    };
 
-  // classify
-  document.querySelectorAll('[data-classify]').forEach(b=>b.onclick=(e)=>{ const ans=eph('classifyAns'); ans[eph('classifyIdx')]=e.currentTarget.dataset.classify; render(); });
-  const cPrev=document.getElementById('classifyPrev'); if(cPrev) cPrev.onclick=()=>{ setEph('classifyIdx', Math.max(0,eph('classifyIdx')-1)); render(); };
-  const cNext=document.getElementById('classifyNext'); if(cNext) cNext.onclick=()=>{ setEph('classifyIdx', Math.min(CLASSIFY_CARDS.length-1,eph('classifyIdx')+1)); render(); };
+    const STAGES = ['Lead', 'Discovery', 'Proposal', 'Negotiation', 'Won', 'Lost'];
+    const STAGE_COLORS = {
+      Lead: 'bg-slate-500/15 text-slate-300 border-slate-500/30',
+      Discovery: 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30',
+      Proposal: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
+      Negotiation: 'bg-orange-500/15 text-orange-300 border-orange-500/30',
+      Won: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
+      Lost: 'bg-rose-500/15 text-rose-300 border-rose-500/30'
+    };
+    const NOTE_ICONS = { call: 'phoneCall', objection: 'shieldAlert', note: 'note' };
 
-  // timeline
-  document.querySelectorAll('[data-tlhour]').forEach(sq=>sq.onclick=(e)=>{
-    const colors=eph('tlColors'); const h=e.currentTarget.dataset.tlhour;
-    const keys=TL_COLORS.map(c=>c.k); const cur=colors[h]; const curIdx=keys.indexOf(cur);
-    colors[h]= curIdx===-1 ? keys[0] : (curIdx===keys.length-1 ? null : keys[curIdx+1]);
-    render();
-  });
+    const PRIORITIES = ['High', 'Medium', 'Low'];
+    const PRIORITY_COLORS = {
+      High: 'bg-rose-500/15 text-rose-300 border-rose-500/30',
+      Medium: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
+      Low: 'bg-slate-500/15 text-slate-300 border-slate-500/30'
+    };
+    const PRIORITY_DOT = { High: 'bg-rose-400', Medium: 'bg-amber-400', Low: 'bg-slate-400' };
 
-  // time blocks auction
-  document.querySelectorAll('[data-blockidx]').forEach(cell=>cell.onclick=(e)=>{
-    const a=ACTIVITIES[state.activityIndex]; const cells=eph('timeblocks'); const i=+e.currentTarget.dataset.blockidx;
-    const keys=a.cats.map(c=>c.k); const cur=cells[i]; const curIdx=keys.indexOf(cur);
-    cells[i]= curIdx===-1 ? keys[0] : (curIdx===keys.length-1 ? null : keys[curIdx+1]);
-    render();
-  });
-  const blocksClear=document.getElementById('blocksClear');
-  if(blocksClear) blocksClear.onclick=()=>{ const a=ACTIVITIES[state.activityIndex]; setEph('timeblocks', Array.from({length:a.blockCount},()=>null)); render(); };
+    const CATEGORIES = ['Call', 'Followup', 'Prep', 'Admin', 'Learning'];
+    const CATEGORY_COLORS = {
+      Call: 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30',
+      Followup: 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30',
+      Prep: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
+      Admin: 'bg-slate-500/15 text-slate-300 border-slate-500/30',
+      Learning: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+    };
+    const CATEGORY_ICONS = { Call: 'phoneCall', Followup: 'repeat', Prep: 'note', Admin: 'kanban', Learning: 'bookMarked' };
 
-  // rank
-  document.querySelectorAll('[data-rankmove]').forEach(b=>b.onclick=(e)=>{
-    const key=e.currentTarget.dataset.rankkey, i=+e.currentTarget.dataset.i, dir=e.currentTarget.dataset.rankmove;
-    const arr=eph(key); const j = dir==='up'? i-1 : i+1;
-    if(j<0||j>=arr.length) return;
-    [arr[i],arr[j]]=[arr[j],arr[i]]; render();
-  });
+    const TRANSLATIONS = {
+      en: {
+        appName: "Sales OS", appSub: "Personal Sales Operating System",
+        questionOfDay: "How can I become a better salesperson today?",
+        dashboard: "Today's Focus", focusMode: "Focus Mode", journal: "Sales Journal", habits: "Sales Habits", pipeline: "Deals & Pipeline",
 
-  // build day
-  document.querySelectorAll('[data-buildslot]').forEach(sel=>sel.onchange=(e)=>{ eph('buildday')[e.currentTarget.dataset.buildslot]=e.currentTarget.value; });
-  const critiqueBtn=document.getElementById('critiqueBtn'); if(critiqueBtn) critiqueBtn.onclick=()=>{ setEph('buildRevealed',true); render(); };
+        guestMode: "Guest Demo Mode",
+        guestNotice: "You are exploring in Demo Mode. All your actions are saved in this browser. You can log in or create an account anytime to sync.",
+        loginOrSignup: "Log In / Sign Up",
+        continueAsGuest: "Continue as Guest (Demo)",
+        keepGuestData: "Keep current demo data and link to my account",
 
-  // commitment timer
-  const commitStart=document.getElementById('commitStart');
-  if(commitStart) commitStart.onclick=()=>{
-    if(eph('commitRunning')) { setEph('commitRunning',false); clearInterval(window.__commitInterval); render(); return; }
-    setEph('commitRunning',true); render();
-    window.__commitInterval=setInterval(()=>{
-      let s=eph('commitTimer'); s = s>0? s-1 : 0;
-      setEph('commitTimer', s);
-      const clock=document.getElementById('commitClock');
-      if(clock) clock.textContent=fmtTime(s);
-      if(s===0){ clearInterval(window.__commitInterval); setEph('commitRunning',false); }
-    },1000);
-  };
-}
+        topPriorities: "Priority Matrix", deepWorkTime: "Deep Work Time", completedTasks: "Completed Focus Items",
+        monthlyTarget: "Monthly Revenue Goal", habitConsistency: "Habit Consistency",
+        biggestWeakness: "Weekly Area for Growth", biggestOpportunity: "Today's Hot Opportunity",
+        enterFocusMode: "Enter Focus Mode", pillarLabel: "Sales OS Pillar #1: Planning & Execution",
+        topPriorityToday: "Top Priority Today:", statDeepWorkSub: "Target: 4h / day", statCompletedSub: "Focus Score",
+        statHabitSub: "day streak", statMonthlySub: "of Goal", viewPipeline: "View Pipeline",
+        noPriorityTask: "No open tasks yet — add one to the Priority Matrix.",
+        noOpportunity: "No active deals yet — add a deal to your pipeline.",
+        noWeaknessData: "Log a few habits to see where to improve.",
 
-function awardPoint(teamIdx, btnEl){
-  state.teams[teamIdx].score++;
-  const fp=document.createElement('span'); fp.className='floatpt'; fp.textContent='+1';
-  const chip = btnEl.closest('.chip') || btnEl;
-  chip.style.position='relative'; chip.appendChild(fp);
-  chip.style.transform='scale(1.08)'; setTimeout(()=>{chip.style.transform='';},250);
-  setTimeout(()=>render(), 550);
-  save();
-}
+        distractionFreeSession: "Distraction-Free Focus Session", focusSessionTitle: "Deep Work Session",
+        focusSessionSub: "Focus exclusively on this task. No interruptions.", startFocusClock: "Start Focus Clock",
+        pauseSession: "Pause Session", sessionComplete: "Session complete! Great work.",
+        pickFocusTask: "What are you focusing on?", noFocusTasks: "All tasks done — add a new one to focus on.",
+        markTaskDoneAfterSession: "Mark this task as done", focusedOn: "Focusing on:",
 
-render();
-</script>
+        habitsSub: "Small daily actions, tracked consistently", addHabit: "New Habit",
+        addHabitPlaceholder: "e.g. Follow up with 5 leads", dayStreak: "day streak", markDone: "Mark Done", markUndone: "Undo",
+        noHabitsYet: "No habits yet — add your first daily sales habit above.",
+
+        journalSub: "Reflect daily on your wins, mistakes, and sales insights", writeJournalEntry: "Write Journal Entry",
+        whatWentWell: "What went well today?", whatWentWrong: "What went wrong or was lost?",
+        whatILearned: "What key insight did I learn?", whatToImprove: "What will I improve tomorrow?",
+        energy: "Energy", confidence: "Confidence", noJournalYet: "No entries yet — write your first reflection.",
+
+        pipelineSub: "Every deal, objection, and call in one place", addDeal: "New Deal",
+        dealName: "Deal / Company name", dealValue: "Value ($)", addNote: "Add Note",
+        notePlaceholder: "Write a call summary, objection & how you handled it, or a quick note...",
+        noNotes: "No notes yet — add the first update.", noDealsYet: "No deals yet — add your first deal to start tracking your pipeline.",
+        noteTypeCall: "Call", noteTypeObjection: "Objection", noteTypeNote: "Note",
+        stageLead: "Lead", stageDiscovery: "Discovery", stageProposal: "Proposal",
+        stageNegotiation: "Negotiation", stageWon: "Won", stageLost: "Lost",
+
+        aiCoach: "AI Sales Performance Coach", aiCoachSub: "Instant executive sales debrief",
+        aiAnalyzing: "Analyzing your sales activity...", applyCoaching: "Apply Coaching Strategy",
+        aiNoDataNotice: "Add a few tasks, habits, or deals first so the coach has something real to analyze.",
+        aiLocalEngineBadge: "Built-in Tactical Analysis Engine",
+        aiGeminiLiveBadge: "Powered by Google Gemini Live",
+        apiKeyOptional: "Gemini API Key (Optional for cloud AI):",
+        saveApiKey: "Save Key",
+
+        quickAction: "Quick Action",
+        searchPlaceholder: "Search deals, habits, journal, tasks... (Press '/')",
+        noSearchResults: "No matches found", searchHint: "Start typing to search across your data",
+        languageToggle: "العربية", save: "Save", cancel: "Cancel", close: "Close", delete: "Delete",
+
+        addTask: "Add Task", taskTitle: "Task title", taskDuration: "Duration (mins)",
+        taskCategory: "Category", taskPriority: "Priority", noTasksInColumn: "Nothing here yet",
+        priorityHigh: "High", priorityMedium: "Medium", priorityLow: "Low",
+        categoryCall: "Call", categoryFollowup: "Follow-up", categoryPrep: "Prep",
+        categoryAdmin: "Admin", categoryLearning: "Learning",
+        confirmDeleteTask: "Delete this task?", confirmDeleteHabit: "Delete this habit?",
+        confirmDeleteDeal: "Delete this deal and all its notes?", confirmDeleteNote: "Delete this note?",
+        confirmDeleteJournal: "Delete this journal entry?", confirmLogout: "Log out of Sales OS?",
+        taskTitleRequired: "Please enter a task title.", dealNameRequired: "Please enter a deal or company name.",
+
+        welcomeBack: "Welcome back", createAccount: "Create your account",
+        email: "Email", password: "Password", login: "Log In", signup: "Sign Up",
+        noAccountYet: "Don't have an account?", haveAccountAlready: "Already have an account?",
+        loggingIn: "Logging in...", signingUp: "Creating account...",
+        logout: "Log Out", loadingYourData: "Loading your data...",
+        authGenericError: "Something went wrong. Please try again.",
+        checkEmailConfirm: "Account created. If email confirmation is on, check your inbox before logging in.",
+
+        targetCalc: "Target Calculator", targetCalcNav: "Target Calculator",
+        targetCalcSub: "Break your revenue goal down into deals, visits, and calls",
+        targetRevenue: "Target Revenue ($)", avgDealValue: "Average Deal Value ($)",
+        closeRate: "Visit → Deal close rate (%)", meetingRate: "Call → Visit rate (%)",
+        workingDaysOptional: "Working days (optional)",
+        dealsNeeded: "Deals Needed", visitsNeeded: "Visits Needed", callsNeeded: "Calls Needed",
+        perDay: "per day", perWeek: "per week (5 days)",
+        calcFillHint: "Fill in the target revenue and average deal value to see your breakdown.",
+        calcFunnel: "Your funnel", calcDailyPace: "Daily pace to hit your target",
+        todaysCallPace: "Today's pace", addTodayTasks: "Add to Priority Matrix",
+        progressSoFar: "Closed so far", remainingToGoal: "Remaining to goal",
+        targetAchieved: "🎉 Target achieved! Great work.", tasksAddedToMatrix: "Added to your Priority Matrix",
+        dealWonToast: "🎉 Deal won! Your target progress just updated.",
+        todaysSnapshot: "Today's snapshot", callsCompleted: "Calls completed", dealsWonLabel: "Deals won",
+
+        emailTaken: "This email already has an account — try logging in instead.",
+        accountNotFound: "No account found with this email.",
+        wrongPassword: "Incorrect password.",
+        localModeAuthNotice: "Simple built-in accounts saved in this browser only."
+      },
+      ar: {
+        appName: "Sales OS", appSub: "نظام التشغيل الشخصي للمبيعات",
+        questionOfDay: "كيف يمكنني أن أصبح بائعاً أفضل اليوم؟",
+        dashboard: "تركيز اليوم", focusMode: "وضع التركيز", journal: "يومية المبيعات", habits: "عادات المبيعات", pipeline: "الصفقات والعملاء",
+
+        guestMode: "وضع التجربة (ديمو)",
+        guestNotice: "أنت الآن تستخدم النظام كضيف (Demo). جميع بياناتك محفوظة في هذا المتصفح. يمكنك تسجيل الدخول أو إنشاء حساب في أي وقت للمزامنة.",
+        loginOrSignup: "تسجيل الدخول / إنشاء حساب",
+        continueAsGuest: "الاستمرار كضيف (تجربة فورية)",
+        keepGuestData: "الاحتفاظ ببيانات التجربة الحالية وربطها بالحساب الجديد",
+
+        topPriorities: "مصفوفة الأولويات", deepWorkTime: "وقت العمل العميق", completedTasks: "المهام المكتملة",
+        monthlyTarget: "هدف الإيرادات الشهري", habitConsistency: "ثبات العادات",
+        biggestWeakness: "نقطة التطوير الأسبوعية", biggestOpportunity: "أهم فرصة بيعية اليوم",
+        enterFocusMode: "الدخول لوضع التركيز", pillarLabel: "ركيزة Sales OS رقم 1: التخطيط والتنفيذ",
+        topPriorityToday: "أهم أولوية اليوم:", statDeepWorkSub: "الهدف: 4 ساعات / يوم", statCompletedSub: "درجة التركيز",
+        statHabitSub: "يوم متتالي", statMonthlySub: "من الهدف", viewPipeline: "عرض الصفقات",
+        noPriorityTask: "لا توجد مهام مفتوحة — ضيف مهمة لمصفوفة الأولويات.",
+        noOpportunity: "لا توجد صفقات نشطة — ضيف صفقة لقمع المبيعات.",
+        noWeaknessData: "سجّل شوية عادات عشان تشوف نقطة التطوير.",
+
+        distractionFreeSession: "جلسة تركيز بدون مشتتات", focusSessionTitle: "جلسة عمل عميق",
+        focusSessionSub: "ركز فقط على هذه المهمة. بدون مقاطعات.", startFocusClock: "ابدأ ساعة التركيز",
+        pauseSession: "إيقاف مؤقت", sessionComplete: "انتهت الجلسة! عمل رائع.",
+        pickFocusTask: "هتركز على إيه؟", noFocusTasks: "كل المهام خلصت — ضيف مهمة جديدة تركز عليها.",
+        markTaskDoneAfterSession: "علّم المهمة دي كمنجزة", focusedOn: "بتركز على:",
+
+        habitsSub: "خطوات يومية بسيطة، بثبات", addHabit: "عادة جديدة",
+        addHabitPlaceholder: "مثال: متابعة 5 عملاء محتملين", dayStreak: "يوم متتالي", markDone: "تم الإنجاز", markUndone: "تراجع",
+        noHabitsYet: "لسه مفيش عادات — ضيف أول عادة بيعية يومية فوق.",
+
+        journalSub: "تأمل يومياً في إنجازاتك وأخطائك ورؤاك البيعية", writeJournalEntry: "تدوين ملاحظة جديدة",
+        whatWentWell: "ما الذي نجحت فيه اليوم؟", whatWentWrong: "ما الذي لم يمر بشكل جيد؟",
+        whatILearned: "ما هي الفكرة الرئيسية التي تعلمتها؟", whatToImprove: "ما الذي سأتحسن فيه غداً؟",
+        energy: "الطاقة", confidence: "الثقة", noJournalYet: "لسه مفيش تدوينات — اكتب أول تأمل ليك.",
+
+        pipelineSub: "كل صفقة واعتراض ومكالمة في مكان واحد", addDeal: "صفقة جديدة",
+        dealName: "اسم الصفقة / العميل", dealValue: "القيمة ($)", addNote: "إضافة ملاحظة",
+        notePlaceholder: "اكتب ملخص مكالمة، اعتراض وإزاي تعاملت معاه، أو ملاحظة سريعة...",
+        noNotes: "لسه مفيش ملاحظات — ضيف أول تحديث.", noDealsYet: "لسه مفيش صفقات — ضيف أول صفقة عشان تبدأ تتابع قمع المبيعات.",
+        noteTypeCall: "مكالمة", noteTypeObjection: "اعتراض", noteTypeNote: "ملاحظة",
+        stageLead: "عميل محتمل", stageDiscovery: "اكتشاف", stageProposal: "عرض سعر",
+        stageNegotiation: "تفاوض", stageWon: "تم الفوز", stageLost: "خسارة",
+
+        aiCoach: "الموجه البيعي الذكي", aiCoachSub: "تحليل تكتيكي فوري لأدائك وصفقاتك",
+        aiAnalyzing: "جاري تحليل نشاطك البيعي والصفقات...", applyCoaching: "تطبيق التوصيات التكتيكية",
+        aiNoDataNotice: "ضيف كام مهمة أو عادة أو صفقة عشان المحلل يقدر يقدم توصيات مخصصة.",
+        aiLocalEngineBadge: "المحرك التحليلي التكتيكي المدمج",
+        aiGeminiLiveBadge: "متصل بـ Google Gemini Live",
+        apiKeyOptional: "مفتاح Gemini API (اختياري للذكاء الاصطناعي المباشر):",
+        saveApiKey: "حفظ المفتاح",
+
+        quickAction: "إجراء سريع",
+        searchPlaceholder: "بحث في الصفقات والعادات واليومية والمهام... (اضغط '/')",
+        noSearchResults: "لا توجد نتائج مطابقة", searchHint: "ابدأ الكتابة للبحث في بياناتك",
+        languageToggle: "English", save: "حفظ", cancel: "إلغاء", close: "إغلاق", delete: "حذف",
+
+        addTask: "إضافة مهمة", taskTitle: "عنوان المهمة", taskDuration: "المدة (دقائق)",
+        taskCategory: "التصنيف", taskPriority: "الأولوية", noTasksInColumn: "لا توجد مهام هنا",
+        priorityHigh: "عالية", priorityMedium: "متوسطة", priorityLow: "منخفضة",
+        categoryCall: "مكالمة", categoryFollowup: "متابعة", categoryPrep: "تحضير",
+        categoryAdmin: "إداري", categoryLearning: "تعلّم",
+        confirmDeleteTask: "حذف هذه المهمة؟", confirmDeleteHabit: "حذف هذه العادة؟",
+        confirmDeleteDeal: "حذف هذه الصفقة وكل ملاحظاتها؟", confirmDeleteNote: "حذف هذه الملاحظة؟",
+        confirmDeleteJournal: "حذف هذا التدوين؟", confirmLogout: "تسجيل الخروج من الحساب والعودة لوضع التجربة؟",
+        taskTitleRequired: "من فضلك اكتب عنوان المهمة.", dealNameRequired: "من فضلك اكتب اسم الصفقة أو العميل.",
+
+        welcomeBack: "أهلاً بعودتك", createAccount: "إنشاء حساب جديد",
+        email: "البريد الإلكتروني", password: "كلمة المرور", login: "تسجيل الدخول", signup: "إنشاء حساب",
+        noAccountYet: "لسه معندكش حساب؟", haveAccountAlready: "عندك حساب بالفعل؟",
+        loggingIn: "جاري تسجيل الدخول...", signingUp: "جاري إنشاء الحساب...",
+        logout: "تسجيل الخروج", loadingYourData: "جاري تحميل بياناتك...",
+        authGenericError: "حصل خطأ، حاول تاني.",
+        checkEmailConfirm: "تم إنشاء الحساب. لو تأكيد الإيميل مفعّل، افتح بريدك قبل تسجيل الدخول.",
+
+        targetCalc: "حاسبة التارجت", targetCalcNav: "حاسبة التارجت",
+        targetCalcSub: "اكسر هدفك المالي لعدد صفقات وزيارات ومكالمات",
+        targetRevenue: "التارجت المطلوب ($)", avgDealValue: "متوسط قيمة الصفقة ($)",
+        closeRate: "معدل تحويل الزيارة لصفقة (%)", meetingRate: "معدل تحويل المكالمة لزيارة (%)",
+        workingDaysOptional: "أيام العمل (اختياري)",
+        dealsNeeded: "صفقات مطلوبة", visitsNeeded: "زيارات مطلوبة", callsNeeded: "مكالمات مطلوبة",
+        perDay: "يوميًا", perWeek: "أسبوعيًا (5 أيام)",
+        calcFillHint: "دخّل التارجت ومتوسط قيمة الصفقة عشان تشوف التكسير.",
+        calcFunnel: "قمع المبيعات بتاعك", calcDailyPace: "المعدل اليومي المطلوب عشان توصل للتارجت",
+        todaysCallPace: "معدل اليوم", addTodayTasks: "إضافة لمصفوفة الأولويات",
+        progressSoFar: "المُحصّل لحد دلوقتي", remainingToGoal: "المتبقي للهدف",
+        targetAchieved: "🎉 وصلت للتارجت! عمل ممتاز.", tasksAddedToMatrix: "اتضافت لمصفوفة الأولويات",
+        dealWonToast: "🎉 صفقة اتكسبت! تقدّم التارجت اتحدّث.",
+        todaysSnapshot: "لمحة سريعة عن اليوم", callsCompleted: "مكالمات مكتملة", dealsWonLabel: "صفقات مكسوبة",
+
+        emailTaken: "الإيميل ده مسجّل بالفعل — جرّب تسجيل الدخول بدل الإنشاء.",
+        accountNotFound: "مفيش حساب بالإيميل ده.",
+        wrongPassword: "كلمة المرور غلط.",
+        localModeAuthNotice: "حسابات مدمجة بسيطة، محفوظة في المتصفح ده بس."
+      }
+    };
+
+    const INITIAL_HABITS = [
+      { id: 'h1', title: 'تخطيط المبيعات الصباحي (15 دقيقة)', streak: 12, completedToday: true },
+      { id: 'h2', title: 'التنقيب والاتصال بـ 10 عملاء محتملين', streak: 5, completedToday: false },
+      { id: 'h3', title: 'مراجعة الاعتراضات المسجلة مع الموجه البيعي', streak: 8, completedToday: true },
+      { id: 'h4', title: 'قراءة 20 دقيقة في منهجيات البيع الحديثة', streak: 15, completedToday: false }
+    ];
+
+    const INITIAL_JOURNAL = [
+      {
+        id: 'j1', date: '2026-11-14',
+        whatWentWell: "معالجة اعتراض السعر في عرض TechCorp باستخدام حساب كلفة عدم الشراء (COI).",
+        whatWentWrong: "التسرع في عرض الحل قبل الحفر في الألم الحقيقي للعميل (PAIN).",
+        whatILearned: "عندما يسأل العميل عن السعر مبكراً، قم بإعادة توجيه السؤال للتشخيص قبل إعطاء الأرقام.",
+        whatToImprove: "إبطاء ريتم الحديث والاستماع 70% من وقت المكالمة غداً.",
+        energy: 4, confidence: 5
+      }
+    ];
+
+    const INITIAL_TASKS = [
+      { id: 't1', title: 'تحضير أسئلة التشخيص (SPIN) لاجتماع شركة Apex Holding', duration: 25, completed: false, category: 'Prep', priority: 'High' },
+      { id: 't2', title: 'قراءة وتلخيص فصل نموذج الدكتور في البيع الاستشاري', duration: 20, completed: true, category: 'Learning', priority: 'Low' },
+      { id: 't3', title: 'متابعة العميل سامح وإرسال وتد الباب لتأمين موعد الأربعاء', duration: 15, completed: false, category: 'Followup', priority: 'High' },
+      { id: 't4', title: 'تحديث بيانات العملاء المحتملين في قمع المبيعات', duration: 10, completed: false, category: 'Admin', priority: 'Medium' }
+    ];
+
+    const INITIAL_DEALS = [
+      {
+        id: 'd1', name: 'TechCorp الشرق الأوسط', value: 45000, stage: 'Negotiation',
+        notes: [
+          { id: 'n1', type: 'call', date: '2026-11-10', content: 'مكالمة تشخيص — تحديد نقطة الألم حول خسائر هدر الوقت في النظام القديم.' },
+          { id: 'n2', type: 'objection', date: '2026-11-12', content: 'اعتراض: السعر أعلى من المنافس بـ 25% — تم إبراز ضمان استرداد الاستثمار وفجوة القيمة.' }
+        ]
+      },
+      {
+        id: 'd2', name: 'مجموعة Apex القابضة', value: 22000, stage: 'Discovery',
+        notes: [
+          { id: 'n3', type: 'call', date: '2026-11-11', content: 'تم حجز المقابلة الاستكشافية وتحضير محاور فحص الاحتياج BANT.' }
+        ]
+      }
+    ];
+
+    const EMPTY_JOURNAL_FORM = { whatWentWell: '', whatWentWrong: '', whatILearned: '', whatToImprove: '', energy: 4, confidence: 5 };
+    const EMPTY_DEAL_FORM = { name: '', value: '', stage: 'Lead' };
+    const EMPTY_TASK_FORM = { title: '', duration: 15, category: 'Call', priority: 'Medium' };
+    const DEFAULT_CALC_FORM = { targetRevenue: '250000', avgDealValue: '15000', closeRate: '30', meetingRate: '40', workingDays: '22' };
+
+    // ============ LOCAL ACCOUNTS HELPER ============
+    function readAccounts() {
+      try { return JSON.parse(localStorage.getItem(LS_ACCOUNTS_KEY) || '{}'); } catch (e) { return {}; }
+    }
+    function writeAccounts(accounts) {
+      localStorage.setItem(LS_ACCOUNTS_KEY, JSON.stringify(accounts));
+    }
+
+    // ============ SMART LOCAL AI COACH ENGINE ============
+    function generateSmartLocalCoaching(deals, tasks, habits, lang) {
+      const isAr = lang === 'ar';
+      const openHigh = tasks.filter(tk => !tk.completed && tk.priority === 'High');
+      const activeDeals = deals.filter(d => d.stage !== 'Won' && d.stage !== 'Lost');
+      const negDeals = deals.filter(d => d.stage === 'Negotiation' || d.stage === 'Proposal');
+      const weakHabits = habits.filter(h => !h.completedToday);
+
+      const tips = [];
+
+      if (negDeals.length > 0) {
+        const topD = negDeals[0];
+        tips.push(isAr
+          ? `🎯 صفقة في مرحلة حاسمة: لديك صفقة "${topD.name}" بقيمة $${topD.value.toLocaleString()} في مرحلة (${topD.stage}). لا تقدم تنازلات في السعر؛ استخدم ميزان بنجامين فرانكلين وحاسبة فجوة القيمة (COI)، واعرض بديلين محددين (X أو Y) لإغلاق التعاقد.`
+          : `🎯 Critical Closing Opportunity: You have "${topD.name}" ($${topD.value.toLocaleString()}) in ${topD.stage}. Avoid discounting; reframe with the Value Gap & ROI math, and offer two specific alternatives to lock the close.`);
+      } else if (activeDeals.length > 0) {
+        tips.push(isAr
+          ? `🚀 تحريك القمع: لديك ${activeDeals.length} صفقات نشطة في مرحلة الاستكشاف. طبق نموذج الدكتور (Pain + Press + Solve) ولا تعرض الحل قبل تسعير كلفة الألم مع العميل.`
+          : `🚀 Pipeline Velocity: You have ${activeDeals.length} active deals in discovery. Use the Doctor Method (Pain + Press + Solve) to quantify the cost of inaction before presenting your solution.`);
+      } else {
+        tips.push(isAr
+          ? `⚡ تنشيط قمع المبيعات: القمع يحتاج لضخ عملاء جدد اليوم. ركز على إجراء 10 مكالمات استكشافية بتكنيك التريلر في أول 30 ثانية لتأمين 3 مواعيد.`
+          : `⚡ Pipeline Injection: Your pipeline needs fresh leads. Focus on 10 outbound trailer calls in the first 30s to secure 3 qualified meetings.`);
+      }
+
+      if (openHigh.length > 0) {
+        tips.push(isAr
+          ? `⏰ أولوية اليوم القصوى: مهمة "${openHigh[0].title}" مصنفة كأولوية عالية. ادخل وضع التركيز (Focus Mode) فوراً وأنجزها في أول 25 دقيقة قبل الانشغال بالأعمال الإدارية.`
+          : `⏰ High-Priority Execution: "${openHigh[0].title}" is your #1 focus. Enter Focus Mode now to clear it in a 25-min distraction-free sprint.`);
+      } else {
+        tips.push(isAr
+          ? `✅ إدارة الطاقة: مصفوفة أولوياتك خالية من الضغوط العاجلة. استغل هذا الوقت في بناء علاقات دافئة مع العملاء السابقين أو طلب إحالات (Referrals).`
+          : `✅ Energy Leverage: No urgent high-priority fires. Use this clarity to nurture past client relationships and ask for warm referrals.`);
+      }
+
+      if (weakHabits.length > 0) {
+        tips.push(isAr
+          ? `🔥 ثبات العادات (1% Daily Bridge): عادة "${weakHabits[0].title}" لم تكتمل اليوم بعد. النجاح في المبيعات هو تراكم عادات هندسية ثابتة، احرص على إتمامها للحفاظ على السلسلة.`
+          : `🔥 Habit Consistency (1% Bridge): "${weakHabits[0].title}" is pending today. Sales mastery is built on non-negotiable daily routines; check it off to protect your streak.`);
+      } else {
+        tips.push(isAr
+          ? `🌟 انضباط استثنائي: أتممت عاداتك البيعية اليوم بنسبة 100%! حافظ على هذا الزخم الذهني واختم يومك بتدوين تأمل في يومية المبيعات.`
+          : `🌟 Flawless Discipline: 100% of your daily sales habits are completed! Carry this momentum into your evening debrief in the Sales Journal.`);
+      }
+
+      return tips.join('\n\n');
+    }
+
+    // Call Gemini API if user configured key, otherwise fallback cleanly
+    async function callGeminiAPI(prompt, apiKey) {
+      if (!apiKey) return null;
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+      try {
+        const res = await fetch(apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+        });
+        const data = await res.json();
+        return data?.candidates?.[0]?.content?.parts?.[0]?.text || null;
+      } catch (err) {
+        return null;
+      }
+    }
+
+    // ==========================================
+    // AUTH MODAL (OPTIONAL - GUESTS CAN OPEN AT WILL)
+    // ==========================================
+    function AuthModal({ isOpen, onClose, t, onLoginSuccess, currentGuestData }) {
+      const [mode, setMode] = useState('login');
+      const [email, setEmail] = useState('');
+      const [password, setPassword] = useState('');
+      const [keepData, setKeepData] = useState(true);
+      const [busy, setBusy] = useState(false);
+      const [error, setError] = useState('');
+      const [info, setInfo] = useState('');
+
+      if (!isOpen) return null;
+
+      const submit = async () => {
+        if (!email.trim() || !password.trim()) return;
+        setBusy(true); setError(''); setInfo('');
+        try {
+          const cleanEmail = email.trim().toLowerCase();
+          if (SUPABASE_READY) {
+            if (mode === 'login') {
+              const { data, error } = await supabaseClient.auth.signInWithPassword({ email: cleanEmail, password });
+              if (error) throw error;
+              onLoginSuccess({ id: data.session.user.id, email: data.session.user.email, isGuest: false }, keepData);
+            } else {
+              const { data, error } = await supabaseClient.auth.signUp({ email: cleanEmail, password });
+              if (error) throw error;
+              if (data.session) {
+                onLoginSuccess({ id: data.session.user.id, email: data.session.user.email, isGuest: false }, keepData);
+              } else {
+                setInfo(t.checkEmailConfirm);
+              }
+            }
+          } else {
+            const accounts = readAccounts();
+            if (mode === 'signup') {
+              if (accounts[cleanEmail]) throw new Error('EMAIL_TAKEN');
+              accounts[cleanEmail] = { email: cleanEmail, password, createdAt: Date.now() };
+              writeAccounts(accounts);
+              onLoginSuccess({ id: cleanEmail, email: cleanEmail, isGuest: false }, keepData);
+            } else {
+              const rec = accounts[cleanEmail];
+              if (!rec) throw new Error('NOT_FOUND');
+              if (rec.password !== password) throw new Error('WRONG_PASSWORD');
+              onLoginSuccess({ id: cleanEmail, email: rec.email, isGuest: false }, keepData);
+            }
+          }
+          onClose();
+        } catch (err) {
+          const code = err && err.message;
+          const map = { EMAIL_TAKEN: t.emailTaken, NOT_FOUND: t.accountNotFound, WRONG_PASSWORD: t.wrongPassword };
+          setError(map[code] || code || t.authGenericError);
+        } finally {
+          setBusy(false);
+        }
+      };
+
+      return (
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
+          <div className="w-full max-w-sm bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl p-6 space-y-4 animate-fadeIn" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center">
+                  <Icon name="user" className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-sm text-slate-100">{mode === 'login' ? t.welcomeBack : t.createAccount}</h3>
+                  <p className="text-[10px] text-amber-400 font-medium">{t.loginOrSignup}</p>
+                </div>
+              </div>
+              <button onClick={onClose} aria-label={t.close} className="p-1 text-slate-400 hover:text-white">
+                <Icon name="x" className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-[11px] text-slate-400 leading-relaxed">
+              {t.localModeAuthNotice}
+            </p>
+
+            <div className="space-y-3">
+              <div>
+                <label className="text-[11px] font-semibold text-slate-400">{t.email}</label>
+                <input type="email" autoFocus value={email} onChange={e => setEmail(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && submit()}
+                  placeholder="sales@example.com"
+                  className="w-full mt-1 p-2.5 rounded-xl bg-zinc-800/60 border border-zinc-700 text-xs text-slate-100 outline-none focus:border-amber-500" />
+              </div>
+              <div>
+                <label className="text-[11px] font-semibold text-slate-400">{t.password}</label>
+                <input type="password" value={password} onChange={e => setPassword(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && submit()}
+                  placeholder="••••••••"
+                  className="w-full mt-1 p-2.5 rounded-xl bg-zinc-800/60 border border-zinc-700 text-xs text-slate-100 outline-none focus:border-amber-500" />
+              </div>
+
+              <label className="flex items-center gap-2 cursor-pointer pt-1">
+                <input type="checkbox" checked={keepData} onChange={e => setKeepData(e.target.checked)} className="accent-amber-500 rounded" />
+                <span className="text-[11px] text-slate-300 font-medium">{t.keepGuestData}</span>
+              </label>
+            </div>
+
+            {error && <p className="text-[11px] text-rose-400 bg-rose-500/10 p-2 rounded-lg border border-rose-500/20">{error}</p>}
+            {info && <p className="text-[11px] text-emerald-400 bg-emerald-500/10 p-2 rounded-lg border border-emerald-500/20">{info}</p>}
+
+            <button onClick={submit} disabled={busy}
+              className="w-full py-2.5 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs hover:bg-amber-400 transition-all disabled:opacity-50 shadow-md">
+              {busy ? (mode === 'login' ? t.loggingIn : t.signingUp) : (mode === 'login' ? t.login : t.signup)}
+            </button>
+
+            <div className="flex items-center justify-between text-[11px] text-slate-400 pt-2 border-t border-zinc-800/80">
+              <button onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setError(''); setInfo(''); }} className="text-amber-400 font-semibold hover:underline">
+                {mode === 'login' ? t.noAccountYet : t.haveAccountAlready}
+              </button>
+              <button onClick={onClose} className="text-slate-500 hover:text-slate-300">
+                {t.continueAsGuest}
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ==========================================
+    // MAIN APP COMPONENT
+    // ==========================================
+    function SalesOSApp() {
+      const [lang, setLang] = useState(() => localStorage.getItem(LS_LANG_KEY) || 'ar');
+      const [theme, setTheme] = useState('dark');
+      const [currentTab, setCurrentTab] = useState('dashboard');
+
+      const t = TRANSLATIONS[lang] || TRANSLATIONS.ar;
+      const isRTL = lang === 'ar';
+
+      // Authentication Session (Guest Mode by Default)
+      const [session, setSession] = useState(() => {
+        try {
+          const savedSessionId = localStorage.getItem(LS_SESSION_KEY);
+          if (savedSessionId) {
+            const accounts = readAccounts();
+            if (accounts[savedSessionId]) {
+              return { id: savedSessionId, email: accounts[savedSessionId].email, isGuest: false };
+            }
+          }
+        } catch (e) {}
+        return { id: GUEST_ID, email: 'Guest (وضع التجربة)', isGuest: true };
+      });
+
+      const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
+      // App Core Data
+      const [habits, setHabits] = useState(INITIAL_HABITS);
+      const [journalEntries, setJournalEntries] = useState(INITIAL_JOURNAL);
+      const [tasks, setTasks] = useState(INITIAL_TASKS);
+      const [deals, setDeals] = useState(INITIAL_DEALS);
+      const [totalFocusMinutes, setTotalFocusMinutes] = useState(45);
+      const [calcForm, setCalcForm] = useState(DEFAULT_CALC_FORM);
+
+      // Focus Timer State (Timestamp-backed to prevent drift)
+      const FOCUS_DURATION = 25 * 60;
+      const [focusTimer, setFocusTimer] = useState(FOCUS_DURATION);
+      const [isTimerRunning, setIsTimerRunning] = useState(false);
+      const [focusTaskId, setFocusTaskId] = useState(null);
+      const [sessionJustCompleted, setSessionJustCompleted] = useState(false);
+      const timerEndRef = useRef(null);
+
+      // AI Coach State
+      const [isAICoachOpen, setIsAICoachOpen] = useState(false);
+      const [aiCoachResponse, setAiCoachResponse] = useState('');
+      const [isAiLoading, setIsAiLoading] = useState(false);
+      const [geminiApiKey, setGeminiApiKey] = useState(() => localStorage.getItem(LS_GEMINI_KEY) || '');
+      const [isEditingKey, setIsEditingKey] = useState(false);
+
+      // Modals & UI States
+      const [searchQuery, setSearchQuery] = useState('');
+      const [isSearchOpen, setIsSearchOpen] = useState(false);
+      const [isFABOpen, setIsFABOpen] = useState(false);
+      const [isJournalModalOpen, setIsJournalModalOpen] = useState(false);
+      const [isDealModalOpen, setIsDealModalOpen] = useState(false);
+      const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+      const [isAddingHabit, setIsAddingHabit] = useState(false);
+      const [newHabitTitle, setNewHabitTitle] = useState('');
+
+      const [newJournal, setNewJournal] = useState(EMPTY_JOURNAL_FORM);
+      const [newDeal, setNewDeal] = useState(EMPTY_DEAL_FORM);
+      const [newTask, setNewTask] = useState(EMPTY_TASK_FORM);
+      const [taskFormError, setTaskFormError] = useState('');
+      const [dealFormError, setDealFormError] = useState('');
+
+      const [expandedDealId, setExpandedDealId] = useState(null);
+      const [toast, setToast] = useState(null);
+      const toastTimerRef = useRef(null);
+      const [noteDrafts, setNoteDrafts] = useState({});
+
+      const dataLoadedRef = useRef(false);
+      const saveTimerRef = useRef(null);
+
+      const showToast = (message) => {
+        setToast(message);
+        if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+        toastTimerRef.current = setTimeout(() => setToast(null), 2800);
+      };
+
+      // Keep html dir and lang attribute in sync
+      useEffect(() => {
+        document.documentElement.dir = isRTL ? 'rtl' : 'ltr';
+        document.documentElement.lang = lang;
+        document.title = lang === 'ar' ? 'Sales OS - نظام التشغيل الشخصي للمبيعات' : 'Sales OS - Personal Sales Operating System';
+        localStorage.setItem(LS_LANG_KEY, lang);
+      }, [lang, isRTL]);
+
+      // Focus Mode Countdown with drift-prevention
+      useEffect(() => {
+        let interval = null;
+        if (isTimerRunning) {
+          if (!timerEndRef.current) {
+            timerEndRef.current = Date.now() + focusTimer * 1000;
+          }
+          interval = setInterval(() => {
+            const remaining = Math.max(0, Math.round((timerEndRef.current - Date.now()) / 1000));
+            setFocusTimer(remaining);
+            if (remaining <= 0) {
+              clearInterval(interval);
+              setIsTimerRunning(false);
+              timerEndRef.current = null;
+              setTotalFocusMinutes(m => m + Math.round(FOCUS_DURATION / 60));
+              setSessionJustCompleted(true);
+              playChimeSound();
+            }
+          }, 300);
+        } else {
+          timerEndRef.current = null;
+        }
+        return () => clearInterval(interval);
+      }, [isTimerRunning]);
+
+      // Keyboard shortcuts
+      useEffect(() => {
+        const handleKeyDown = (e) => {
+          if (e.key === '/' && !['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
+            e.preventDefault(); setIsSearchOpen(true);
+          }
+          if (e.key === 'Escape') {
+            setIsSearchOpen(false);
+            setIsFABOpen(false);
+            setIsAuthModalOpen(false);
+            setIsAICoachOpen(false);
+          }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+      }, []);
+
+      // Load user or guest data from storage
+      useEffect(() => {
+        let cancelled = false;
+        (async () => {
+          let saved = null;
+          if (SUPABASE_READY && !session.isGuest) {
+            const { data, error } = await supabaseClient
+              .from('user_data')
+              .select('data')
+              .eq('user_id', session.id)
+              .maybeSingle();
+            if (!error && data && data.data) saved = data.data;
+          } else {
+            try {
+              const raw = localStorage.getItem(LS_DATA_PREFIX + session.id);
+              saved = raw ? JSON.parse(raw) : null;
+            } catch (e) { saved = null; }
+          }
+          if (cancelled) return;
+          if (saved) {
+            if (Array.isArray(saved.habits)) setHabits(saved.habits);
+            if (Array.isArray(saved.journalEntries)) setJournalEntries(saved.journalEntries);
+            if (Array.isArray(saved.tasks)) setTasks(saved.tasks);
+            if (Array.isArray(saved.deals)) setDeals(saved.deals);
+            if (saved.calcForm && typeof saved.calcForm === 'object') setCalcForm(saved.calcForm);
+            if (typeof saved.totalFocusMinutes === 'number') setTotalFocusMinutes(saved.totalFocusMinutes);
+          }
+          dataLoadedRef.current = true;
+        })();
+        return () => { cancelled = true; };
+      }, [session.id]);
+
+      // Auto-save data on change
+      useEffect(() => {
+        if (!dataLoadedRef.current) return;
+        if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = setTimeout(() => {
+          const payload = { habits, journalEntries, tasks, deals, calcForm, totalFocusMinutes };
+          if (SUPABASE_READY && !session.isGuest) {
+            supabaseClient.from('user_data').upsert({ user_id: session.id, data: payload, updated_at: new Date().toISOString() });
+          } else {
+            localStorage.setItem(LS_DATA_PREFIX + session.id, JSON.stringify(payload));
+          }
+        }, 600);
+        return () => clearTimeout(saveTimerRef.current);
+      }, [habits, journalEntries, tasks, deals, calcForm, totalFocusMinutes, session.id]);
+
+      const handleLoginSuccess = (newSession, keepData) => {
+        if (keepData) {
+          const payload = { habits, journalEntries, tasks, deals, calcForm, totalFocusMinutes };
+          localStorage.setItem(LS_DATA_PREFIX + newSession.id, JSON.stringify(payload));
+        }
+        localStorage.setItem(LS_SESSION_KEY, newSession.id);
+        setSession(newSession);
+        showToast(lang === 'ar' ? 'تم تسجيل الدخول بنجاح ومزامنة البيانات.' : 'Logged in successfully.');
+      };
+
+      const handleLogout = () => {
+        if (!window.confirm(t.confirmLogout)) return;
+        localStorage.removeItem(LS_SESSION_KEY);
+        setSession({ id: GUEST_ID, email: 'Guest (وضع التجربة)', isGuest: true });
+        showToast(lang === 'ar' ? 'تم تسجيل الخروج والعودة لوضع التجربة.' : 'Returned to Guest Mode.');
+      };
+
+      const openTasks = useMemo(() => tasks.filter(tk => !tk.completed), [tasks]);
+
+      // AI Coach Analysis
+      const runAICoachAnalysis = async () => {
+        setIsAiLoading(true);
+        setIsAICoachOpen(true);
+
+        const openHigh = tasks.filter(tk => !tk.completed && tk.priority === 'High');
+        const activeDeals = deals.filter(d => d.stage !== 'Won' && d.stage !== 'Lost');
+        const objections = deals.flatMap(d => d.notes.filter(n => n.type === 'objection').map(n => `${d.name}: ${n.content}`));
+        const weakHabits = habits.filter(h => !h.completedToday);
+
+        const context = [
+          `Open high-priority tasks: ${openHigh.map(tk => tk.title).join('; ') || 'none'}`,
+          `Active deals: ${activeDeals.map(d => `${d.name} ($${d.value}, stage: ${d.stage})`).join('; ') || 'none'}`,
+          `Recent objections logged: ${objections.slice(-3).join(' | ') || 'none'}`,
+          `Habits pending today: ${weakHabits.map(h => h.title).join('; ') || 'none'}`
+        ].join('\n');
+
+        let result = null;
+        if (geminiApiKey) {
+          const prompt = `You are Omar Saied's senior sales performance coach. Analyze this real salesperson context and give exactly 3 concise, punchy, high-impact tactical bullet points in ${lang === 'ar' ? 'Arabic' : 'English'}:\n${context}`;
+          result = await callGeminiAPI(prompt, geminiApiKey);
+        }
+
+        if (result) {
+          setAiCoachResponse(result);
+        } else {
+          const localCoaching = generateSmartLocalCoaching(deals, tasks, habits, lang);
+          setAiCoachResponse(localCoaching);
+        }
+        setIsAiLoading(false);
+      };
+
+      const formatTimer = (seconds) => {
+        const m = Math.floor(seconds / 60), s = seconds % 60;
+        return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+      };
+
+      // Actions
+      const addJournalEntry = () => {
+        if (!newJournal.whatWentWell.trim() && !newJournal.whatILearned.trim()) return;
+        setJournalEntries([{ id: 'j' + Date.now(), date: new Date().toISOString().split('T')[0], ...newJournal }, ...journalEntries]);
+        setNewJournal(EMPTY_JOURNAL_FORM);
+        setIsJournalModalOpen(false);
+      };
+      const deleteJournalEntry = (id) => {
+        if (!window.confirm(t.confirmDeleteJournal)) return;
+        setJournalEntries(journalEntries.filter(j => j.id !== id));
+      };
+
+      const addHabit = () => {
+        if (!newHabitTitle.trim()) return;
+        setHabits([...habits, { id: 'h' + Date.now(), title: newHabitTitle.trim(), streak: 0, completedToday: false }]);
+        setNewHabitTitle('');
+        setIsAddingHabit(false);
+      };
+      const deleteHabit = (id) => {
+        if (!window.confirm(t.confirmDeleteHabit)) return;
+        setHabits(habits.filter(h => h.id !== id));
+      };
+      const toggleHabit = (id) => {
+        setHabits(habits.map(h => h.id === id
+          ? { ...h, completedToday: !h.completedToday, streak: h.completedToday ? Math.max(0, h.streak - 1) : h.streak + 1 }
+          : h));
+      };
+
+      const addDeal = () => {
+        if (!newDeal.name.trim()) { setDealFormError(t.dealNameRequired); return; }
+        const val = Math.max(0, Number(newDeal.value) || 0);
+        setDeals([{ id: 'd' + Date.now(), name: newDeal.name.trim(), value: val, stage: newDeal.stage, notes: [] }, ...deals]);
+        setNewDeal(EMPTY_DEAL_FORM);
+        setDealFormError('');
+        setIsDealModalOpen(false);
+      };
+      const deleteDeal = (id) => {
+        if (!window.confirm(t.confirmDeleteDeal)) return;
+        setDeals(deals.filter(d => d.id !== id));
+        if (expandedDealId === id) setExpandedDealId(null);
+      };
+      const updateDealStage = (id, stage) => {
+        setDeals(deals.map(d => d.id === id ? { ...d, stage } : d));
+        if (stage === 'Won') showToast(t.dealWonToast);
+      };
+
+      const addNoteToDeal = (dealId) => {
+        const draft = noteDrafts[dealId];
+        if (!draft || !draft.content || !draft.content.trim()) return;
+        setDeals(deals.map(d => d.id === dealId
+          ? { ...d, notes: [...d.notes, { id: 'n' + Date.now(), type: draft.type || 'note', date: new Date().toISOString().split('T')[0], content: draft.content.trim() }] }
+          : d));
+        setNoteDrafts({ ...noteDrafts, [dealId]: { type: 'note', content: '' } });
+      };
+      const deleteNote = (dealId, noteId) => {
+        if (!window.confirm(t.confirmDeleteNote)) return;
+        setDeals(deals.map(d => d.id === dealId ? { ...d, notes: d.notes.filter(n => n.id !== noteId) } : d));
+      };
+
+      const addTask = () => {
+        if (!newTask.title.trim()) { setTaskFormError(t.taskTitleRequired); return; }
+        setTasks([...tasks, {
+          id: 't' + Date.now(),
+          title: newTask.title.trim(),
+          duration: Math.max(5, Number(newTask.duration) || 15),
+          completed: false,
+          category: newTask.category,
+          priority: newTask.priority
+        }]);
+        setNewTask(EMPTY_TASK_FORM);
+        setTaskFormError('');
+        setIsTaskModalOpen(false);
+      };
+      const deleteTask = (id) => {
+        if (!window.confirm(t.confirmDeleteTask)) return;
+        setTasks(tasks.filter(tk => tk.id !== id));
+        if (focusTaskId === id) setFocusTaskId(null);
+      };
+      const toggleTask = (id) => setTasks(tasks.map(tk => tk.id === id ? { ...tk, completed: !tk.completed } : tk));
+
+      // Search
+      const searchableItems = useMemo(() => {
+        const items = [];
+        habits.forEach(h => items.push({ id: 'habit-' + h.id, title: h.title, type: t.habits, tab: 'habits' }));
+        journalEntries.forEach(j => items.push({ id: 'jrn-' + j.id, title: j.whatWentWell || j.whatILearned, type: t.journal, tab: 'journal' }));
+        tasks.forEach(tk => items.push({ id: 'task-' + tk.id, title: tk.title, type: t.dashboard, tab: 'dashboard' }));
+        deals.forEach(d => {
+          items.push({ id: 'deal-' + d.id, title: d.name, type: t.pipeline, tab: 'pipeline' });
+          d.notes.forEach(n => items.push({ id: 'note-' + n.id, title: `${d.name}: ${n.content}`, type: t.pipeline, tab: 'pipeline' }));
+        });
+        return items;
+      }, [habits, journalEntries, tasks, deals, t]);
+
+      const filteredSearchResults = useMemo(() => {
+        if (!searchQuery.trim()) return [];
+        const q = searchQuery.toLowerCase();
+        return searchableItems.filter(i => i.title.toLowerCase().includes(q));
+      }, [searchQuery, searchableItems]);
+
+      const goToTab = (tab) => { setCurrentTab(tab); setIsSearchOpen(false); setIsFABOpen(false); setSearchQuery(''); };
+
+      const NAV_ITEMS = [
+        { id: 'dashboard', icon: 'dashboard', label: t.dashboard },
+        { id: 'focus', icon: 'crosshair', label: t.focusMode },
+        { id: 'habits', icon: 'repeat', label: t.habits },
+        { id: 'journal', icon: 'bookMarked', label: t.journal },
+        { id: 'pipeline', icon: 'kanban', label: t.pipeline },
+        { id: 'calculator', icon: 'calculator', label: t.targetCalcNav }
+      ];
+
+      const wonRevenue = useMemo(() =>
+        deals.filter(d => d.stage === 'Won').reduce((sum, d) => sum + (d.value || 0), 0),
+      [deals]);
+
+      const topPriorityTask = useMemo(() => {
+        const rank = { High: 0, Medium: 1, Low: 2 };
+        const open = tasks.filter(tk => !tk.completed).sort((a, b) => rank[a.priority] - rank[b.priority]);
+        return open[0] || null;
+      }, [tasks]);
+
+      const hottestDeal = useMemo(() => {
+        const stageWeight = { Negotiation: 3, Proposal: 2, Discovery: 1, Lead: 0 };
+        const active = deals.filter(d => d.stage !== 'Won' && d.stage !== 'Lost');
+        if (active.length === 0) return null;
+        return [...active].sort((a, b) => (stageWeight[b.stage] - stageWeight[a.stage]) || (b.value - a.value))[0];
+      }, [deals]);
+
+      const habitStats = useMemo(() => {
+        if (habits.length === 0) return { pct: 0, bestStreak: 0, weakest: null };
+        const doneToday = habits.filter(h => h.completedToday).length;
+        const pct = Math.round((doneToday / habits.length) * 100);
+        const bestStreak = Math.max(0, ...habits.map(h => h.streak));
+        const weakest = [...habits].sort((a, b) => a.streak - b.streak)[0];
+        return { pct, bestStreak, weakest };
+      }, [habits]);
+
+      const buildFunnel = (targetAmount, avgDeal, closeRate, meetingRate, workingDays) => {
+        if (!targetAmount || !avgDeal || targetAmount <= 0 || avgDeal <= 0) return null;
+        const deals = targetAmount / avgDeal;
+        const visits = (closeRate && closeRate > 0) ? deals / (closeRate / 100) : null;
+        const calls = (visits !== null && meetingRate && meetingRate > 0) ? visits / (meetingRate / 100) : null;
+        const dealsR = Math.ceil(deals);
+        const visitsR = visits !== null ? Math.ceil(visits) : null;
+        const callsR = calls !== null ? Math.ceil(calls) : null;
+        const perDay = (workingDays && workingDays > 0) ? {
+          deals: Math.ceil(dealsR / workingDays * 10) / 10,
+          visits: visitsR !== null ? Math.ceil(visitsR / workingDays) : null,
+          calls: callsR !== null ? Math.ceil(callsR / workingDays) : null
+        } : null;
+        return { dealsR, visitsR, callsR, perDay };
+      };
+
+      const calcResults = useMemo(() => {
+        const target = Math.max(0, parseFloat(calcForm.targetRevenue) || 0);
+        const avgDeal = Math.max(0, parseFloat(calcForm.avgDealValue) || 0);
+        const closeRate = Math.min(100, Math.max(0, parseFloat(calcForm.closeRate) || 0));
+        const meetingRate = Math.min(100, Math.max(0, parseFloat(calcForm.meetingRate) || 0));
+        const workingDays = Math.max(1, parseFloat(calcForm.workingDays) || 22);
+
+        const total = buildFunnel(target, avgDeal, closeRate, meetingRate, workingDays);
+        if (!total) return null;
+
+        const progressPct = target > 0 ? Math.min(100, Math.round((wonRevenue / target) * 100)) : 0;
+        const remainingAmount = Math.max(0, target - wonRevenue);
+        const remaining = remainingAmount > 0 ? buildFunnel(remainingAmount, avgDeal, closeRate, meetingRate, workingDays) : null;
+
+        return { ...total, target, wonRevenue, progressPct, remainingAmount, remaining };
+      }, [calcForm, wonRevenue]);
+
+      const addPaceTasksToMatrix = () => {
+        if (!calcResults || !calcResults.remaining || !calcResults.remaining.perDay) return;
+        const pace = calcResults.remaining.perDay;
+        const newTasks = [];
+        if (pace.calls) {
+          const roundedCalls = Math.ceil(pace.calls);
+          newTasks.push({
+            id: 't' + Date.now() + 'c',
+            title: `${t.callsNeeded}: ${roundedCalls} ${lang === 'ar' ? 'مكالمات استكشافية' : 'calls'}`,
+            duration: 20, completed: false, category: 'Call', priority: 'High', fromCalculator: true
+          });
+        }
+        if (pace.visits) {
+          const roundedVisits = Math.ceil(pace.visits);
+          newTasks.push({
+            id: 't' + Date.now() + 'v',
+            title: `${t.visitsNeeded}: ${roundedVisits} ${lang === 'ar' ? 'مقابلات / عروض' : 'meetings'}`,
+            duration: 45, completed: false, category: 'Followup', priority: 'High', fromCalculator: true
+          });
+        }
+        if (newTasks.length) {
+          setTasks([...tasks, ...newTasks]);
+          showToast(t.tasksAddedToMatrix);
+          setCurrentTab('dashboard');
+        }
+      };
+
+      const tasksByPriority = useMemo(() => {
+        const grouped = { High: [], Medium: [], Low: [] };
+        tasks.forEach(tk => { (grouped[tk.priority] || grouped.Medium).push(tk); });
+        return grouped;
+      }, [tasks]);
+
+      const completedCount = tasks.filter(tk => tk.completed).length;
+      const completedPct = tasks.length > 0 ? Math.round((completedCount / tasks.length) * 100) : 0;
+      const deepWorkHours = Math.floor(totalFocusMinutes / 60);
+      const deepWorkMins = totalFocusMinutes % 60;
+
+      const TaskCard = ({ tk }) => (
+        <div className={`group-item p-3 rounded-xl border bg-zinc-800/40 space-y-2 ${tk.fromCalculator ? 'border-amber-500/40 ring-1 ring-amber-500/10' : 'border-zinc-700/50'}`}>
+          <div className="flex items-start gap-2.5">
+            <button onClick={() => toggleTask(tk.id)} aria-label={tk.completed ? t.markUndone : t.markDone}
+              className={`w-5 h-5 mt-0.5 rounded-md border flex items-center justify-center transition-all shrink-0 ${tk.completed ? 'bg-emerald-500 border-emerald-500 text-slate-950 font-bold' : 'border-slate-600 hover:border-amber-400'}`}>
+              {tk.completed && <Icon name="check" className="w-3.5 h-3.5" />}
+            </button>
+            <div className="flex-1 min-w-0">
+              <p className={`text-xs font-semibold break-words ${tk.completed ? 'line-through text-slate-500' : 'text-slate-200'}`}>{tk.title}</p>
+              <div className="flex items-center flex-wrap gap-1.5 mt-1.5">
+                <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold border ${CATEGORY_COLORS[tk.category] || CATEGORY_COLORS.Admin}`}>
+                  <Icon name={CATEGORY_ICONS[tk.category] || 'tag'} className="w-2.5 h-2.5" />{t['category' + tk.category]}
+                </span>
+                <span className="text-[10px] text-slate-400 font-mono">{tk.duration}m</span>
+                {tk.fromCalculator && (
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold text-amber-400 bg-amber-500/10" title={t.targetCalc}>
+                    <Icon name="calculator" className="w-2.5 h-2.5" />
+                  </span>
+                )}
+              </div>
+            </div>
+            <button onClick={() => deleteTask(tk.id)} aria-label={t.delete} className="reveal-on-hover shrink-0 p-1 rounded-md text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-all">
+              <Icon name="trash" className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      );
+
+      const focusedTask = tasks.find(tk => tk.id === focusTaskId) || null;
+
+      return (
+        <div className={`min-h-screen font-sans ${theme === 'dark' ? 'bg-[#09090b] text-slate-100' : 'bg-slate-50 text-slate-800'} transition-colors duration-200 flex flex-col md:flex-row`}>
+
+          {/* SIDEBAR NAVIGATION */}
+          <aside className={`w-full md:w-64 border-b md:border-b-0 ${isRTL ? 'md:border-l' : 'md:border-r'} ${theme === 'dark' ? 'border-zinc-800 bg-[#0c0c0e]' : 'border-slate-200 bg-white'} flex flex-col justify-between shrink-0 p-4`}>
+            <div>
+              <div className="flex items-center gap-3 mb-5 px-2">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 via-indigo-600 to-cyan-400 flex items-center justify-center text-white shadow-lg shrink-0">
+                  <Icon name="compass" className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h1 className="font-extrabold text-base leading-none text-slate-100">{t.appName}</h1>
+                  <span className="text-[10px] text-amber-400 font-semibold tracking-wide">{t.appSub}</span>
+                </div>
+              </div>
+
+              {/* ACCOUNT / GUEST STATUS PILL */}
+              <div className="p-2.5 mb-4 rounded-xl bg-zinc-800/40 border border-zinc-700/50 flex flex-col gap-2">
+                <div className="flex items-center justify-between gap-1 text-[11px]">
+                  <span className="flex items-center gap-1.5 font-bold truncate">
+                    <span className={`w-2 h-2 rounded-full ${session.isGuest ? 'bg-amber-400 animate-pulse' : 'bg-emerald-400'}`}></span>
+                    <span className={session.isGuest ? 'text-amber-400' : 'text-slate-200'}>
+                      {session.isGuest ? t.guestMode : session.email}
+                    </span>
+                  </span>
+                  {session.isGuest ? (
+                    <button onClick={() => setIsAuthModalOpen(true)}
+                      className="px-2 py-0.5 rounded-md bg-amber-500 text-slate-950 font-bold text-[10px] hover:bg-amber-400 transition-all shadow-sm">
+                      {t.loginOrSignup}
+                    </button>
+                  ) : (
+                    <button onClick={handleLogout}
+                      className="text-[10px] font-bold text-rose-400 hover:underline">
+                      {t.logout}
+                    </button>
+                  )}
+                </div>
+                {session.isGuest && (
+                  <p className="text-[9.5px] text-slate-500 leading-tight">
+                    {t.guestNotice}
+                  </p>
+                )}
+              </div>
+
+              <div className="p-3 mb-4 rounded-xl bg-gradient-to-r from-amber-500/10 via-indigo-500/10 to-transparent border border-amber-500/20 text-[11px] font-medium text-amber-200/90 leading-snug">
+                💡 "{t.questionOfDay}"
+              </div>
+
+              <nav className="space-y-1">
+                {NAV_ITEMS.map(item => {
+                  const active = currentTab === item.id;
+                  return (
+                    <button key={item.id} onClick={() => setCurrentTab(item.id)}
+                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+                        active ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30 shadow-sm' : 'text-slate-400 hover:bg-zinc-800/60 hover:text-slate-200'
+                      }`}>
+                      <Icon name={item.icon} className={`w-4 h-4 ${active ? 'text-amber-400' : 'text-slate-400'}`} />
+                      <span>{item.label}</span>
+                    </button>
+                  );
+                })}
+              </nav>
+            </div>
+
+            <div className="mt-4 pt-3 border-t border-zinc-800/60 space-y-2">
+              <button onClick={() => runAICoachAnalysis()}
+                className="w-full rounded-xl p-3 bg-gradient-to-r from-indigo-900/40 via-purple-900/30 to-slate-900 border border-indigo-500/30 hover:border-indigo-500/60 transition-all text-left">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-1.5 rounded-lg bg-indigo-500/20 text-indigo-400 shrink-0">
+                    <Icon name="brain" className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-indigo-200 flex items-center gap-1">
+                      {t.aiCoach}
+                      <Icon name="sparkles" className="w-3 h-3 text-amber-400" />
+                    </p>
+                    <p className="text-[10px] text-indigo-300/70">{t.aiCoachSub}</p>
+                  </div>
+                </div>
+              </button>
+            </div>
+          </aside>
+
+          {/* MAIN CONTENT AREA */}
+          <main className="flex-1 flex flex-col min-w-0 overflow-y-auto">
+
+            {/* TOP HEADER BAR (CORRECTED CLOSING BUTTON TAG) */}
+            <header className={`h-16 px-6 border-b ${theme === 'dark' ? 'border-zinc-800 bg-[#0c0c0e]/80' : 'border-slate-200 bg-white/80'} backdrop-blur-md sticky top-0 z-20 flex items-center justify-between gap-4`}>
+              <button onClick={() => setIsSearchOpen(true)}
+                className="flex-1 max-w-md flex items-center justify-between px-3.5 py-2 rounded-xl text-xs bg-zinc-900 text-slate-400 border border-zinc-800 hover:border-slate-500 transition-all">
+                <div className="flex items-center gap-2">
+                  <Icon name="search" className="w-4 h-4 text-slate-400" />
+                  <span>{t.searchPlaceholder}</span>
+                </div>
+                <kbd className="hidden sm:inline-block px-1.5 py-0.5 text-[10px] bg-slate-800 text-slate-400 rounded border border-slate-700 font-mono">/</kbd>
+              </button>
+
+              <div className="flex items-center gap-2">
+                <button onClick={() => setIsJournalModalOpen(true)}
+                  className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition-all shadow-md">
+                  <Icon name="bookMarked" className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">{t.writeJournalEntry}</span>
+                </button>
+
+                <button onClick={() => setLang(lang === 'en' ? 'ar' : 'en')} aria-label={t.languageToggle}
+                  className="p-2 rounded-xl text-xs font-bold flex items-center gap-1.5 hover:bg-zinc-800 text-slate-300 border border-zinc-800">
+                  <Icon name="languages" className="w-4 h-4 text-indigo-400" />
+                  <span className="text-[11px] font-bold">{t.languageToggle}</span>
+                </button>
+
+                <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} aria-label="Toggle theme"
+                  className="p-2 rounded-xl hover:bg-zinc-800 text-amber-400 border border-zinc-800">
+                  <Icon name={theme === 'dark' ? 'sun' : 'moon'} className="w-4 h-4" />
+                </button>
+
+                <div className="w-8 h-8 rounded-full bg-gradient-to-r from-amber-500 to-indigo-500 flex items-center justify-center text-slate-950 font-black text-xs ring-2 ring-amber-500/30">
+                  OS
+                </div>
+              </div>
+            </header>
+
+            <div className="p-6 max-w-5xl w-full mx-auto space-y-6">
+
+              {/* TAB 1: TODAY'S FOCUS DASHBOARD */}
+              {currentTab === 'dashboard' && (
+                <div className="space-y-6 animate-fadeIn">
+                  <div className="p-6 rounded-2xl bg-gradient-to-r from-zinc-900 via-indigo-950/40 to-zinc-900 border border-amber-500/20 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">DAILY MINDSET</span>
+                        <span className="text-xs text-slate-400">• {t.pillarLabel}</span>
+                      </div>
+                      <h2 className="text-lg md:text-xl font-black text-slate-100">
+                        {lang === 'ar' ? '"أنت لا تغلق الصفقات بالضغط، بل تغلقها بفهم ألم العميل وتقديم الخلاص."' : '"You don\'t close sales by pitching; you close sales by understanding."'}
+                      </h2>
+                      <p className="text-xs text-slate-400">
+                        {t.topPriorityToday} <strong className="text-amber-400">{topPriorityTask ? topPriorityTask.title : t.noPriorityTask}</strong>
+                      </p>
+                    </div>
+                    <button onClick={() => { setFocusTaskId(topPriorityTask ? topPriorityTask.id : null); setCurrentTab('focus'); }}
+                      className="px-4 py-2.5 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs flex items-center gap-2 hover:bg-amber-400 transition-all shrink-0 shadow-lg">
+                      <Icon name="crosshair" className="w-4 h-4" />
+                      {t.enterFocusMode}
+                    </button>
+                  </div>
+
+                  {/* 4 STATS CARDS */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {[
+                      { label: t.deepWorkTime, val: `${deepWorkHours}h ${deepWorkMins}m`, sub: t.statDeepWorkSub, icon: 'clock', color: 'text-amber-400' },
+                      { label: t.completedTasks, val: `${completedCount} / ${tasks.length}`, sub: `${completedPct}% ${t.statCompletedSub}`, icon: 'checkCircle', color: 'text-emerald-400' },
+                      { label: t.habitConsistency, val: `${habitStats.pct}%`, sub: `${habitStats.bestStreak} ${t.statHabitSub}`, icon: 'repeat', color: 'text-cyan-400' },
+                      calcResults
+                        ? { label: t.monthlyTarget, val: `${calcResults.progressPct}%`, sub: `$${Math.round(wonRevenue).toLocaleString()} / $${Math.round(calcResults.target).toLocaleString()} ${t.statMonthlySub}`, icon: 'target', color: 'text-indigo-400', clickTab: 'calculator' }
+                        : { label: t.monthlyTarget, val: '—', sub: t.calcFillHint, icon: 'target', color: 'text-indigo-400', clickTab: 'calculator' }
+                    ].map((stat, i) => (
+                      <div key={i} onClick={() => stat.clickTab && setCurrentTab(stat.clickTab)}
+                        className={`p-4 rounded-xl border bg-zinc-900/70 border-zinc-800 space-y-1.5 ${stat.clickTab ? 'cursor-pointer hover:border-indigo-500/50 transition-all' : ''}`}>
+                        <div className="flex items-center justify-between text-slate-400 text-xs">
+                          <span>{stat.label}</span>
+                          <Icon name={stat.icon} className={`w-4 h-4 ${stat.color}`} />
+                        </div>
+                        <div className="text-lg font-black">{stat.val}</div>
+                        <div className="text-[10px] text-slate-400 truncate">{stat.sub}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* TARGET PACING BANNER */}
+                  {calcResults && calcResults.remaining && (
+                    <div className="p-4 rounded-xl border bg-zinc-900/70 border-zinc-800 flex items-center justify-between gap-3 flex-wrap">
+                      <div className="flex items-center gap-2 text-xs text-slate-300">
+                        <Icon name="calculator" className="w-4 h-4 text-amber-400" />
+                        <span>
+                          {t.todaysCallPace}: <strong className="text-amber-400">{calcResults.remaining.perDay ? Math.ceil(calcResults.remaining.perDay.calls ?? 0) : Math.ceil(calcResults.remaining.callsR ?? 0)}</strong> {t.callsNeeded} · <strong className="text-indigo-400">{calcResults.remaining.perDay ? Math.ceil(calcResults.remaining.perDay.visits ?? 0) : Math.ceil(calcResults.remaining.visitsR ?? 0)}</strong> {t.visitsNeeded}
+                        </span>
+                      </div>
+                      <button onClick={addPaceTasksToMatrix}
+                        className="px-3 py-1.5 rounded-lg bg-amber-500 text-slate-950 font-bold text-[11px] flex items-center gap-1.5 hover:bg-amber-400 transition-all shadow-sm">
+                        <Icon name="plus" className="w-3.5 h-3.5" />
+                        {t.addTodayTasks}
+                      </button>
+                    </div>
+                  )}
+
+                  {/* PRIORITY MATRIX & GROWTH INSIGHT */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="md:col-span-2 p-5 rounded-2xl border bg-zinc-900/70 border-zinc-800 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Icon name="grid" className="w-4 h-4 text-amber-500" />
+                          <h3 className="text-sm font-bold">{t.topPriorities}</h3>
+                        </div>
+                        <button onClick={() => setIsTaskModalOpen(true)}
+                          className="px-2.5 py-1.5 rounded-lg bg-amber-500 text-slate-950 font-bold text-[11px] flex items-center gap-1.5 shadow-sm hover:bg-amber-400 transition-all">
+                          <Icon name="plus" className="w-3.5 h-3.5" />
+                          {t.addTask}
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        {PRIORITIES.map(p => (
+                          <div key={p} className="space-y-2">
+                            <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border ${PRIORITY_COLORS[p]}`}>
+                              <span className={`w-1.5 h-1.5 rounded-full ${PRIORITY_DOT[p]}`}></span>
+                              <span className="text-[11px] font-bold">{t['priority' + p]}</span>
+                              <span className="text-[10px] text-slate-400 ms-auto">{tasksByPriority[p].length}</span>
+                            </div>
+                            <div className="space-y-2 min-h-[40px]">
+                              {tasksByPriority[p].length === 0 && (
+                                <p className="text-[11px] text-slate-500 text-center py-3 border border-dashed border-zinc-700/60 rounded-xl">{t.noTasksInColumn}</p>
+                              )}
+                              {tasksByPriority[p].map(tk => <TaskCard key={tk.id} tk={tk} />)}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      <button onClick={() => setCurrentTab('pipeline')} className="text-xs text-amber-400 hover:underline flex items-center gap-1 font-semibold">
+                        {t.viewPipeline}
+                        <Icon name="chevronRight" flip={isRTL} className="w-3 h-3" />
+                      </button>
+                    </div>
+
+                    <div className="p-5 rounded-2xl border bg-gradient-to-b from-indigo-950/30 to-zinc-900 border-indigo-500/20 space-y-4">
+                      <div className="flex items-center gap-2 text-indigo-400">
+                        <Icon name="lightbulb" className="w-4 h-4" />
+                        <h3 className="text-xs font-bold uppercase tracking-wider">AI Growth Insight</h3>
+                      </div>
+                      <div className="space-y-3 text-xs">
+                        <div className="p-3 rounded-xl bg-zinc-800/50 border border-zinc-700/40 space-y-1">
+                          <span className="text-[10px] font-bold text-amber-400">{t.biggestWeakness}</span>
+                          <p className="text-slate-300 text-[11px] leading-relaxed">
+                            {habitStats.weakest ? `${habitStats.weakest.title} (${habitStats.weakest.streak} ${t.dayStreak})` : t.noWeaknessData}
+                          </p>
+                        </div>
+                        <div className="p-3 rounded-xl bg-zinc-800/50 border border-zinc-700/40 space-y-1">
+                          <span className="text-[10px] font-bold text-emerald-400">{t.biggestOpportunity}</span>
+                          <p className="text-slate-300 text-[11px] leading-relaxed">
+                            {hottestDeal ? `${hottestDeal.name} ($${hottestDeal.value.toLocaleString()}) — ${t['stage' + hottestDeal.stage]}` : t.noOpportunity}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 2: FOCUS MODE */}
+              {currentTab === 'focus' && (
+                <div className="max-w-xl mx-auto p-8 rounded-3xl border border-amber-500/30 bg-zinc-900/90 shadow-2xl text-center space-y-6 animate-fadeIn">
+                  <div className="flex items-center justify-center gap-2 text-amber-400 font-bold text-xs uppercase tracking-wider">
+                    <Icon name="crosshair" className="w-4 h-4" />
+                    {t.distractionFreeSession}
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-slate-100">{t.focusSessionTitle}</h2>
+                    <p className="text-xs text-slate-400 mt-1">{t.focusSessionSub}</p>
+                  </div>
+
+                  {!isTimerRunning && focusTimer === FOCUS_DURATION && (
+                    <div className="text-start space-y-2">
+                      <label className="text-[11px] font-semibold text-slate-400">{t.pickFocusTask}</label>
+                      {openTasks.length === 0 ? (
+                        <p className="text-xs text-slate-500 py-2">{t.noFocusTasks}</p>
+                      ) : (
+                        <select value={focusTaskId || ''} onChange={e => setFocusTaskId(e.target.value || null)}
+                          className="w-full p-2.5 rounded-xl bg-zinc-800/60 border border-zinc-700 text-xs text-slate-100 outline-none focus:border-amber-500">
+                          <option value="">—</option>
+                          {openTasks.map(tk => <option key={tk.id} value={tk.id}>{tk.title}</option>)}
+                        </select>
+                      )}
+                    </div>
+                  )}
+
+                  {focusedTask && (isTimerRunning || focusTimer < FOCUS_DURATION) && (
+                    <p className="text-xs text-slate-300">
+                      <span className="text-slate-500">{t.focusedOn}</span>{' '}
+                      <strong className="text-amber-400">{focusedTask.title}</strong>
+                    </p>
+                  )}
+
+                  <div className="py-6">
+                    <div className="text-6xl font-black font-mono tracking-wider text-amber-400">
+                      {formatTimer(focusTimer)}
+                    </div>
+                    {sessionJustCompleted && focusTimer === 0 && (
+                      <p className="text-xs font-semibold text-emerald-400 mt-3 animate-bounce">
+                        {t.sessionComplete}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-center gap-3">
+                    <button disabled={focusTimer === 0} onClick={() => setIsTimerRunning(!isTimerRunning)}
+                      className={`px-6 py-3 rounded-2xl font-black text-xs flex items-center gap-2 transition-all shadow-lg disabled:opacity-40 disabled:cursor-not-allowed ${isTimerRunning ? 'bg-rose-500 text-white' : 'bg-amber-500 text-slate-950 hover:bg-amber-400'}`}>
+                      <Icon name={isTimerRunning ? "pause" : "play"} className="w-4 h-4" />
+                      {isTimerRunning ? t.pauseSession : t.startFocusClock}
+                    </button>
+                    <button onClick={() => { setIsTimerRunning(false); setFocusTimer(FOCUS_DURATION); setSessionJustCompleted(false); timerEndRef.current = null; }}
+                      aria-label={t.cancel} className="p-3 rounded-2xl bg-zinc-800 text-slate-300 hover:bg-zinc-700">
+                      <Icon name="rotateCcw" className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {sessionJustCompleted && focusedTask && !focusedTask.completed && (
+                    <button onClick={() => { toggleTask(focusedTask.id); setSessionJustCompleted(false); }}
+                      className="px-4 py-2 rounded-xl bg-emerald-500 text-slate-950 font-bold text-xs flex items-center gap-2 mx-auto hover:bg-emerald-400 transition-all shadow-md">
+                      <Icon name="check" className="w-4 h-4" />
+                      {t.markTaskDoneAfterSession}
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* TAB 3: SALES HABITS */}
+              {currentTab === 'habits' && (
+                <div className="space-y-4 animate-fadeIn">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="text-lg font-bold">{t.habits}</h2>
+                      <p className="text-xs text-slate-400">{t.habitsSub}</p>
+                    </div>
+                    <button onClick={() => setIsAddingHabit(!isAddingHabit)} className="px-3.5 py-2 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs flex items-center gap-2 shadow-md hover:bg-amber-400 transition-all">
+                      <Icon name="plus" className="w-4 h-4" />
+                      {t.addHabit}
+                    </button>
+                  </div>
+
+                  {isAddingHabit && (
+                    <div className="p-3 rounded-xl border border-zinc-800 bg-zinc-900 flex items-center gap-2">
+                      <input autoFocus value={newHabitTitle} onChange={e => setNewHabitTitle(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && addHabit()}
+                        placeholder={t.addHabitPlaceholder}
+                        className="flex-1 bg-zinc-800/60 border border-zinc-700 rounded-lg px-3 py-2 text-xs outline-none focus:border-amber-500 text-slate-100" />
+                      <button onClick={addHabit} className="px-3 py-2 rounded-lg bg-amber-500 text-slate-950 text-xs font-bold">{t.save}</button>
+                      <button onClick={() => { setIsAddingHabit(false); setNewHabitTitle(''); }} className="px-3 py-2 rounded-lg bg-zinc-800 text-slate-300 text-xs font-bold">{t.cancel}</button>
+                    </div>
+                  )}
+
+                  {habits.length === 0 && !isAddingHabit && (
+                    <p className="text-xs text-slate-500 text-center py-8 border border-dashed border-zinc-700/60 rounded-xl">{t.noHabitsYet}</p>
+                  )}
+
+                  <div className="space-y-2">
+                    {habits.map(h => (
+                      <div key={h.id} className="group-item p-4 rounded-xl border bg-zinc-900/70 border-zinc-800 flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <Icon name="flame" className={`w-4 h-4 ${h.streak > 0 ? 'text-amber-400' : 'text-slate-600'}`} />
+                          <div>
+                            <p className={`text-xs font-semibold ${h.completedToday ? 'text-slate-200' : 'text-slate-300'}`}>{h.title}</p>
+                            <span className="text-[10px] text-slate-400">{h.streak} {t.dayStreak}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button onClick={() => toggleHabit(h.id)}
+                            className={`px-3 py-1.5 rounded-lg text-[11px] font-bold shrink-0 transition-all ${h.completedToday ? 'bg-zinc-800 text-slate-300 border border-zinc-700' : 'bg-emerald-500 text-slate-950 hover:bg-emerald-400'}`}>
+                            {h.completedToday ? t.markUndone : t.markDone}
+                          </button>
+                          <button onClick={() => deleteHabit(h.id)} aria-label={t.delete} className="reveal-on-hover p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-all">
+                            <Icon name="trash" className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 4: SALES JOURNAL */}
+              {currentTab === 'journal' && (
+                <div className="space-y-6 animate-fadeIn">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="text-lg font-bold">{t.journal}</h2>
+                      <p className="text-xs text-slate-400">{t.journalSub}</p>
+                    </div>
+                    <button onClick={() => setIsJournalModalOpen(true)} className="px-3.5 py-2 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs flex items-center gap-2 shadow-md hover:bg-amber-400 transition-all">
+                      <Icon name="plus" className="w-4 h-4" />
+                      {t.writeJournalEntry}
+                    </button>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl border bg-zinc-900/70 border-zinc-800 flex items-center gap-5 flex-wrap text-xs">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{t.todaysSnapshot}</span>
+                    <span className="text-slate-300 flex items-center gap-1.5">
+                      <Icon name="phoneCall" className="w-3.5 h-3.5 text-cyan-400" />
+                      {t.callsCompleted}: <strong className="text-cyan-400">{tasks.filter(tk => tk.category === 'Call' && tk.completed).length}</strong>
+                    </span>
+                    <span className="text-slate-300 flex items-center gap-1.5">
+                      <Icon name="target" className="w-3.5 h-3.5 text-emerald-400" />
+                      {t.dealsWonLabel}: <strong className="text-emerald-400">{deals.filter(d => d.stage === 'Won').length}</strong>
+                    </span>
+                    {calcResults && (
+                      <span className="text-slate-300 flex items-center gap-1.5">
+                        <Icon name="calculator" className="w-3.5 h-3.5 text-amber-400" />
+                        {t.monthlyTarget}: <strong className="text-amber-400">{calcResults.progressPct}%</strong>
+                      </span>
+                    )}
+                  </div>
+
+                  {journalEntries.length === 0 && (
+                    <p className="text-xs text-slate-500 text-center py-8 border border-dashed border-zinc-700/60 rounded-xl">{t.noJournalYet}</p>
+                  )}
+
+                  <div className="space-y-4">
+                    {journalEntries.map(j => (
+                      <div key={j.id} className="group-item p-6 rounded-2xl border bg-zinc-900 border-zinc-800 space-y-4">
+                        <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+                          <span className="text-xs font-mono font-bold text-amber-400">{j.date}</span>
+                          <div className="flex items-center gap-4 text-xs text-slate-400">
+                            <span>{t.energy}: <strong className="text-amber-400">{j.energy}/5</strong></span>
+                            <span>{t.confidence}: <strong className="text-indigo-400">{j.confidence}/5</strong></span>
+                            <button onClick={() => deleteJournalEntry(j.id)} aria-label={t.delete} className="reveal-on-hover p-1 rounded-md text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-all">
+                              <Icon name="trash" className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                          <div className="p-3 rounded-xl bg-emerald-950/10 border border-emerald-500/20">
+                            <span className="font-bold text-emerald-400">{t.whatWentWell}</span>
+                            <p className="text-slate-300 mt-1 leading-relaxed">{j.whatWentWell}</p>
+                          </div>
+                          <div className="p-3 rounded-xl bg-indigo-950/10 border border-indigo-500/20">
+                            <span className="font-bold text-indigo-400">{t.whatILearned}</span>
+                            <p className="text-slate-300 mt-1 leading-relaxed">{j.whatILearned}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 5: DEALS & PIPELINE */}
+              {currentTab === 'pipeline' && (
+                <div className="space-y-4 animate-fadeIn">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="text-lg font-bold">{t.pipeline}</h2>
+                      <p className="text-xs text-slate-400">{t.pipelineSub}</p>
+                    </div>
+                    <button onClick={() => setIsDealModalOpen(true)} className="px-3.5 py-2 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs flex items-center gap-2 shadow-md hover:bg-amber-400 transition-all">
+                      <Icon name="plus" className="w-4 h-4" />
+                      {t.addDeal}
+                    </button>
+                  </div>
+
+                  {deals.length === 0 && (
+                    <p className="text-xs text-slate-500 text-center py-8 border border-dashed border-zinc-700/60 rounded-xl">{t.noDealsYet}</p>
+                  )}
+
+                  <div className="space-y-3">
+                    {deals.map(deal => {
+                      const isOpen = expandedDealId === deal.id;
+                      const draft = noteDrafts[deal.id] || { type: 'note', content: '' };
+                      return (
+                        <div key={deal.id} className="group-item rounded-2xl border bg-zinc-900/70 border-zinc-800 overflow-hidden">
+                          <div className="w-full p-4 flex items-center justify-between gap-3 text-start">
+                            <button onClick={() => setExpandedDealId(isOpen ? null : deal.id)} className="flex items-center gap-3 flex-1 min-w-0">
+                              <Icon name="chevronDown" className={`w-4 h-4 text-slate-500 transition-transform shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
+                              <div className="min-w-0 text-start">
+                                <p className="text-sm font-bold text-slate-100 truncate">{deal.name}</p>
+                                <p className="text-[11px] text-slate-400 font-mono">${deal.value.toLocaleString()} • {deal.notes.length} {lang === 'ar' ? 'ملاحظات وتحديثات' : 'updates'}</p>
+                              </div>
+                            </button>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <select value={deal.stage} onClick={e => e.stopPropagation()} onChange={e => updateDealStage(deal.id, e.target.value)}
+                                className={`px-2.5 py-1 rounded-full text-[11px] font-bold border outline-none cursor-pointer ${STAGE_COLORS[deal.stage]}`}>
+                                {STAGES.map(s => <option key={s} value={s} className="bg-zinc-900 text-slate-100">{t['stage' + s]}</option>)}
+                              </select>
+                              <button onClick={() => deleteDeal(deal.id)} aria-label={t.delete} className="reveal-on-hover p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-all">
+                                <Icon name="trash" className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+
+                          {isOpen && (
+                            <div className="border-t border-zinc-800 p-4 space-y-3 bg-zinc-900/40">
+                              {deal.notes.length === 0 && <p className="text-xs text-slate-500">{t.noNotes}</p>}
+                              {deal.notes.map(n => (
+                                <div key={n.id} className="group-item flex items-start gap-2.5 text-xs">
+                                  <div className="p-1.5 rounded-lg bg-zinc-800 shrink-0 mt-0.5">
+                                    <Icon name={NOTE_ICONS[n.type]} className="w-3.5 h-3.5 text-amber-400" />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 mb-0.5">
+                                      <span className="font-mono text-[10px] text-slate-500">{n.date}</span>
+                                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 text-slate-400">{t['noteType' + n.type.charAt(0).toUpperCase() + n.type.slice(1)]}</span>
+                                    </div>
+                                    <p className="text-slate-300 leading-relaxed">{n.content}</p>
+                                  </div>
+                                  <button onClick={() => deleteNote(deal.id, n.id)} aria-label={t.delete} className="reveal-on-hover shrink-0 p-1 rounded-md text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-all">
+                                    <Icon name="trash" className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              ))}
+
+                              <div className="pt-2 border-t border-zinc-800/60 space-y-2">
+                                <div className="flex items-center gap-2">
+                                  {['call', 'objection', 'note'].map(type => (
+                                    <button key={type} onClick={() => setNoteDrafts({ ...noteDrafts, [deal.id]: { ...draft, type } })}
+                                      className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border flex items-center gap-1 transition-all ${draft.type === type ? 'bg-amber-500 text-slate-950 border-amber-500' : 'bg-zinc-800 text-slate-400 border-zinc-700'}`}>
+                                      <Icon name={NOTE_ICONS[type]} className="w-3 h-3" />
+                                      {t['noteType' + type.charAt(0).toUpperCase() + type.slice(1)]}
+                                    </button>
+                                  ))}
+                                </div>
+                                <textarea rows={2} value={draft.content} onChange={e => setNoteDrafts({ ...noteDrafts, [deal.id]: { ...draft, content: e.target.value } })}
+                                  placeholder={t.notePlaceholder}
+                                  className="w-full p-2.5 rounded-xl bg-zinc-800/60 border border-zinc-700 text-xs text-slate-100 outline-none focus:border-amber-500 resize-none" />
+                                <button onClick={() => addNoteToDeal(deal.id)} className="px-3 py-1.5 rounded-lg bg-amber-500 text-slate-950 text-xs font-bold hover:bg-amber-400 transition-all shadow-sm">
+                                  {t.addNote}
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 6: TARGET CALCULATOR */}
+              {currentTab === 'calculator' && (
+                <div className="space-y-6 animate-fadeIn">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div>
+                      <h2 className="text-lg font-bold">{t.targetCalc}</h2>
+                      <p className="text-xs text-slate-400">{t.targetCalcSub}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => setCurrentTab('dashboard')} className="px-2.5 py-1.5 rounded-lg bg-zinc-800 border border-zinc-700 text-[11px] font-semibold text-slate-300 hover:border-amber-500/50 flex items-center gap-1.5 transition-all">
+                        <Icon name="grid" className="w-3.5 h-3.5 text-amber-400" />
+                        {t.topPriorities}
+                      </button>
+                      <button onClick={() => setCurrentTab('pipeline')} className="px-2.5 py-1.5 rounded-lg bg-zinc-800 border border-zinc-700 text-[11px] font-semibold text-slate-300 hover:border-amber-500/50 flex items-center gap-1.5 transition-all">
+                        <Icon name="kanban" className="w-3.5 h-3.5 text-rose-400" />
+                        {t.pipeline}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="p-5 rounded-2xl border bg-zinc-900/70 border-zinc-800 space-y-4">
+                      <div>
+                        <label className="text-[11px] font-semibold text-slate-400">{t.targetRevenue}</label>
+                        <input type="number" min="0" value={calcForm.targetRevenue}
+                          onChange={e => setCalcForm({ ...calcForm, targetRevenue: e.target.value })}
+                          placeholder="250000"
+                          className="w-full mt-1 p-2.5 rounded-xl bg-zinc-800/60 border border-zinc-700 text-sm font-bold text-amber-400 outline-none focus:border-amber-500" />
+                      </div>
+                      <div>
+                        <label className="text-[11px] font-semibold text-slate-400">{t.avgDealValue}</label>
+                        <input type="number" min="0" value={calcForm.avgDealValue}
+                          onChange={e => setCalcForm({ ...calcForm, avgDealValue: e.target.value })}
+                          placeholder="15000"
+                          className="w-full mt-1 p-2.5 rounded-xl bg-zinc-800/60 border border-zinc-700 text-xs text-slate-100 outline-none focus:border-amber-500" />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-[11px] font-semibold text-slate-400">{t.closeRate}</label>
+                          <input type="number" min="0" max="100" value={calcForm.closeRate}
+                            onChange={e => setCalcForm({ ...calcForm, closeRate: e.target.value })}
+                            placeholder="30"
+                            className="w-full mt-1 p-2.5 rounded-xl bg-zinc-800/60 border border-zinc-700 text-xs text-slate-100 outline-none focus:border-amber-500" />
+                        </div>
+                        <div>
+                          <label className="text-[11px] font-semibold text-slate-400">{t.meetingRate}</label>
+                          <input type="number" min="0" max="100" value={calcForm.meetingRate}
+                            onChange={e => setCalcForm({ ...calcForm, meetingRate: e.target.value })}
+                            placeholder="40"
+                            className="w-full mt-1 p-2.5 rounded-xl bg-zinc-800/60 border border-zinc-700 text-xs text-slate-100 outline-none focus:border-amber-500" />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-[11px] font-semibold text-slate-400">{t.workingDaysOptional}</label>
+                        <input type="number" min="1" max="31" value={calcForm.workingDays}
+                          onChange={e => setCalcForm({ ...calcForm, workingDays: e.target.value })}
+                          placeholder="22"
+                          className="w-full mt-1 p-2.5 rounded-xl bg-zinc-800/60 border border-zinc-700 text-xs text-slate-100 outline-none focus:border-amber-500" />
+                      </div>
+                    </div>
+
+                    <div className="p-5 rounded-2xl border bg-gradient-to-b from-indigo-950/30 to-zinc-900 border-indigo-500/20 space-y-4">
+                      <div className="flex items-center gap-2 text-indigo-400">
+                        <Icon name="calculator" className="w-4 h-4" />
+                        <h3 className="text-xs font-bold uppercase tracking-wider">{t.calcFunnel}</h3>
+                      </div>
+
+                      {!calcResults && (
+                        <p className="text-xs text-slate-400 py-6 text-center">{t.calcFillHint}</p>
+                      )}
+
+                      {calcResults && (
+                        <div className="space-y-3">
+                          <div className="space-y-1.5">
+                            <div className="flex items-center justify-between text-[11px]">
+                              <span className="text-slate-400">{t.progressSoFar}: <strong className="text-emerald-400">${Math.round(wonRevenue).toLocaleString()}</strong></span>
+                              <span className="text-slate-400 font-mono font-bold">{calcResults.progressPct}%</span>
+                            </div>
+                            <div className="h-2 rounded-full bg-zinc-800 overflow-hidden">
+                              <div className="h-full bg-gradient-to-r from-emerald-500 to-amber-400 transition-all" style={{ width: `${calcResults.progressPct}%` }}></div>
+                            </div>
+                          </div>
+
+                          {calcResults.remainingAmount <= 0 ? (
+                            <p className="text-xs text-emerald-400 font-bold text-center py-2">{t.targetAchieved}</p>
+                          ) : (
+                            <p className="text-[11px] text-slate-400">
+                              {t.remainingToGoal}: <strong className="text-amber-400 font-mono">${Math.round(calcResults.remainingAmount).toLocaleString()}</strong>
+                            </p>
+                          )}
+
+                          <div className="flex items-stretch gap-1.5">
+                            {[
+                              { label: t.callsNeeded, val: calcResults.callsR, icon: 'phoneCall', color: 'text-cyan-400 border-cyan-500/30 bg-cyan-500/10' },
+                              { label: t.visitsNeeded, val: calcResults.visitsR, icon: 'compass', color: 'text-indigo-400 border-indigo-500/30 bg-indigo-500/10' },
+                              { label: t.dealsNeeded, val: calcResults.dealsR, icon: 'target', color: 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10' }
+                            ].map((box, i, arr) => (
+                              <React.Fragment key={box.label}>
+                                <div className={`flex-1 p-3 rounded-xl border text-center space-y-1 ${box.color}`}>
+                                  <Icon name={box.icon} className="w-4 h-4 mx-auto" />
+                                  <div className="text-xl font-black text-slate-100">{box.val === null ? '—' : box.val}</div>
+                                  <div className="text-[10px] font-semibold">{box.label}</div>
+                                </div>
+                                {i < arr.length - 1 && (
+                                  <div className="flex items-center text-slate-600">
+                                    <Icon name="arrowRight" flip={isRTL} className="w-4 h-4" />
+                                  </div>
+                                )}
+                              </React.Fragment>
+                            ))}
+                          </div>
+
+                          {calcResults.perDay && (
+                            <div className="p-3 rounded-xl bg-zinc-800/50 border border-zinc-700/40 space-y-2">
+                              <span className="text-[10px] font-bold text-amber-400">{t.calcDailyPace}</span>
+                              <div className="grid grid-cols-3 gap-2 text-center">
+                                <div>
+                                  <div className="text-sm font-black text-slate-100 font-mono">{calcResults.perDay.calls !== null ? Math.ceil(calcResults.perDay.calls) : '—'}</div>
+                                  <div className="text-[10px] text-slate-400">{t.callsNeeded} / {t.perDay}</div>
+                                </div>
+                                <div>
+                                  <div className="text-sm font-black text-slate-100 font-mono">{calcResults.perDay.visits !== null ? Math.ceil(calcResults.perDay.visits) : '—'}</div>
+                                  <div className="text-[10px] text-slate-400">{t.visitsNeeded} / {t.perDay}</div>
+                                </div>
+                                <div>
+                                  <div className="text-sm font-black text-slate-100 font-mono">{calcResults.perDay.deals}</div>
+                                  <div className="text-[10px] text-slate-400">{t.dealsNeeded} / {t.perDay}</div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {calcResults.remainingAmount > 0 && calcResults.remaining && calcResults.remaining.perDay && (
+                            <button onClick={addPaceTasksToMatrix}
+                              className="w-full py-2.5 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs hover:bg-amber-400 transition-all flex items-center justify-center gap-2 shadow-md">
+                              <Icon name="grid" className="w-4 h-4" />
+                              {t.addTodayTasks}
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+            </div>
+          </main>
+
+          {/* SEARCH MODAL */}
+          {isSearchOpen && (
+            <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-start justify-center pt-24 px-4" onClick={() => setIsSearchOpen(false)}>
+              <div className="w-full max-w-lg bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden animate-fadeIn" onClick={e => e.stopPropagation()}>
+                <div className="flex items-center gap-2 px-4 py-3 border-b border-zinc-800">
+                  <Icon name="search" className="w-4 h-4 text-slate-400 shrink-0" />
+                  <input autoFocus value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder={t.searchPlaceholder}
+                    aria-label={t.searchPlaceholder}
+                    className="flex-1 bg-transparent text-sm outline-none placeholder:text-slate-500 text-slate-100" />
+                  <button onClick={() => setIsSearchOpen(false)} aria-label={t.close} className="p-1 text-slate-400 hover:text-white">
+                    <Icon name="x" className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="max-h-80 overflow-y-auto p-2">
+                  {searchQuery.trim() === '' && <p className="text-xs text-slate-500 text-center py-6">{t.searchHint}</p>}
+                  {searchQuery.trim() !== '' && filteredSearchResults.length === 0 && <p className="text-xs text-slate-500 text-center py-6">{t.noSearchResults}</p>}
+                  {filteredSearchResults.map(item => (
+                    <button key={item.id} onClick={() => goToTab(item.tab)} className="w-full text-start px-3 py-2.5 rounded-xl hover:bg-zinc-800 flex items-center justify-between gap-2 transition-all">
+                      <span className="text-xs text-slate-200 truncate">{item.title}</span>
+                      <span className="text-[10px] shrink-0 px-2 py-0.5 rounded bg-zinc-800 text-slate-400 border border-zinc-700">{item.type}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* JOURNAL MODAL */}
+          {isJournalModalOpen && (
+            <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center px-4" onClick={() => setIsJournalModalOpen(false)}>
+              <div className="w-full max-w-lg bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto animate-fadeIn" onClick={e => e.stopPropagation()}>
+                <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+                  <h3 className="font-bold text-sm text-slate-100">{t.writeJournalEntry}</h3>
+                  <button onClick={() => setIsJournalModalOpen(false)} aria-label={t.close} className="p-1 text-slate-400 hover:text-white">
+                    <Icon name="x" className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="space-y-3">
+                  {[
+                    { key: 'whatWentWell', label: t.whatWentWell }, { key: 'whatWentWrong', label: t.whatWentWrong },
+                    { key: 'whatILearned', label: t.whatILearned }, { key: 'whatToImprove', label: t.whatToImprove }
+                  ].map(field => (
+                    <div key={field.key}>
+                      <label className="text-[11px] font-semibold text-slate-400">{field.label}</label>
+                      <textarea value={newJournal[field.key]} onChange={e => setNewJournal({ ...newJournal, [field.key]: e.target.value })} rows={2}
+                        className="w-full mt-1 p-2.5 rounded-xl bg-zinc-800/60 border border-zinc-700 text-xs text-slate-100 outline-none focus:border-amber-500 resize-none" />
+                    </div>
+                  ))}
+                  <div className="grid grid-cols-2 gap-4 pt-1">
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-400">{t.energy} ({newJournal.energy}/5)</label>
+                      <input type="range" min="1" max="5" value={newJournal.energy} onChange={e => setNewJournal({ ...newJournal, energy: Number(e.target.value) })} className="w-full accent-amber-500" />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-400">{t.confidence} ({newJournal.confidence}/5)</label>
+                      <input type="range" min="1" max="5" value={newJournal.confidence} onChange={e => setNewJournal({ ...newJournal, confidence: Number(e.target.value) })} className="w-full accent-indigo-500" />
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 pt-2">
+                  <button onClick={() => setIsJournalModalOpen(false)} className="flex-1 py-2.5 rounded-xl bg-zinc-800 text-slate-300 font-bold text-xs hover:bg-zinc-700 transition-all">{t.cancel}</button>
+                  <button onClick={addJournalEntry} className="flex-1 py-2.5 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs hover:bg-amber-400 transition-all shadow-md">{t.save}</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* DEAL MODAL */}
+          {isDealModalOpen && (
+            <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center px-4" onClick={() => setIsDealModalOpen(false)}>
+              <div className="w-full max-w-sm bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl p-6 space-y-4 animate-fadeIn" onClick={e => e.stopPropagation()}>
+                <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+                  <h3 className="font-bold text-sm text-slate-100">{t.addDeal}</h3>
+                  <button onClick={() => setIsDealModalOpen(false)} aria-label={t.close} className="p-1 text-slate-400 hover:text-white"><Icon name="x" className="w-4 h-4" /></button>
+                </div>
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-400">{t.dealName}</label>
+                    <input autoFocus value={newDeal.name} onChange={e => { setNewDeal({ ...newDeal, name: e.target.value }); if (dealFormError) setDealFormError(''); }}
+                      onKeyDown={e => e.key === 'Enter' && addDeal()}
+                      className="w-full mt-1 p-2.5 rounded-xl bg-zinc-800/60 border border-zinc-700 text-xs text-slate-100 outline-none focus:border-amber-500" />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-400">{t.dealValue}</label>
+                    <input type="number" min="0" value={newDeal.value} onChange={e => setNewDeal({ ...newDeal, value: Math.max(0, Number(e.target.value)) })}
+                      className="w-full mt-1 p-2.5 rounded-xl bg-zinc-800/60 border border-zinc-700 text-xs text-slate-100 outline-none focus:border-amber-500" />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-400">{t.pipeline}</label>
+                    <select value={newDeal.stage} onChange={e => setNewDeal({ ...newDeal, stage: e.target.value })}
+                      className="w-full mt-1 p-2.5 rounded-xl bg-zinc-800/60 border border-zinc-700 text-xs text-slate-100 outline-none focus:border-amber-500">
+                      {STAGES.map(s => <option key={s} value={s}>{t['stage' + s]}</option>)}
+                    </select>
+                  </div>
+                  {dealFormError && <p className="text-[11px] text-rose-400">{dealFormError}</p>}
+                </div>
+                <div className="flex items-center gap-2 pt-2">
+                  <button onClick={() => setIsDealModalOpen(false)} className="flex-1 py-2.5 rounded-xl bg-zinc-800 text-slate-300 font-bold text-xs hover:bg-zinc-700 transition-all">{t.cancel}</button>
+                  <button onClick={addDeal} className="flex-1 py-2.5 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs hover:bg-amber-400 transition-all shadow-md">{t.save}</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TASK MODAL */}
+          {isTaskModalOpen && (
+            <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center px-4" onClick={() => setIsTaskModalOpen(false)}>
+              <div className="w-full max-w-sm bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl p-6 space-y-4 animate-fadeIn" onClick={e => e.stopPropagation()}>
+                <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+                  <h3 className="font-bold text-sm text-slate-100">{t.addTask}</h3>
+                  <button onClick={() => setIsTaskModalOpen(false)} aria-label={t.close} className="p-1 text-slate-400 hover:text-white"><Icon name="x" className="w-4 h-4" /></button>
+                </div>
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-400">{t.taskTitle}</label>
+                    <input autoFocus value={newTask.title} onKeyDown={e => e.key === 'Enter' && addTask()}
+                      onChange={e => { setNewTask({ ...newTask, title: e.target.value }); if (taskFormError) setTaskFormError(''); }}
+                      className="w-full mt-1 p-2.5 rounded-xl bg-zinc-800/60 border border-zinc-700 text-xs text-slate-100 outline-none focus:border-amber-500" />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-400">{t.taskDuration}</label>
+                    <input type="number" min="5" step="5" value={newTask.duration} onChange={e => setNewTask({ ...newTask, duration: Math.max(5, Number(e.target.value)) })}
+                      className="w-full mt-1 p-2.5 rounded-xl bg-zinc-800/60 border border-zinc-700 text-xs text-slate-100 outline-none focus:border-amber-500" />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-400">{t.taskCategory}</label>
+                    <div className="flex flex-wrap gap-1.5 mt-1.5">
+                      {CATEGORIES.map(c => (
+                        <button key={c} onClick={() => setNewTask({ ...newTask, category: c })}
+                          className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border flex items-center gap-1 transition-all ${
+                            newTask.category === c ? CATEGORY_COLORS[c] + ' ring-1 ring-inset ring-current' : 'bg-zinc-800 text-slate-400 border-zinc-700'
+                          }`}>
+                          <Icon name={CATEGORY_ICONS[c]} className="w-3 h-3" />{t['category' + c]}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-400">{t.taskPriority}</label>
+                    <div className="flex gap-1.5 mt-1.5">
+                      {PRIORITIES.map(p => (
+                        <button key={p} onClick={() => setNewTask({ ...newTask, priority: p })}
+                          className={`flex-1 px-2.5 py-1.5 rounded-lg text-[11px] font-bold border flex items-center justify-center gap-1.5 transition-all ${
+                            newTask.priority === p ? PRIORITY_COLORS[p] + ' ring-1 ring-inset ring-current' : 'bg-zinc-800 text-slate-400 border-zinc-700'
+                          }`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${PRIORITY_DOT[p]}`}></span>{t['priority' + p]}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {taskFormError && <p className="text-[11px] text-rose-400">{taskFormError}</p>}
+                </div>
+                <div className="flex items-center gap-2 pt-2">
+                  <button onClick={() => setIsTaskModalOpen(false)} className="flex-1 py-2.5 rounded-xl bg-zinc-800 text-slate-300 font-bold text-xs hover:bg-zinc-700 transition-all">{t.cancel}</button>
+                  <button onClick={addTask} className="flex-1 py-2.5 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs hover:bg-amber-400 transition-all shadow-md">{t.save}</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* AI COACH SLIDE-OVER MODAL */}
+          {isAICoachOpen && (
+            <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex justify-end animate-fadeIn" onClick={() => setIsAICoachOpen(false)}>
+              <div className="w-full max-w-md bg-zinc-900 border-s border-zinc-800 h-full p-6 flex flex-col justify-between space-y-4 overflow-y-auto" onClick={e => e.stopPropagation()}>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+                    <div className="flex items-center gap-2">
+                      <Icon name="bot" className="w-5 h-5 text-indigo-400" />
+                      <div>
+                        <h3 className="font-bold text-sm text-slate-100">{t.aiCoach}</h3>
+                        <span className="text-[10px] text-indigo-400 font-semibold">
+                          {geminiApiKey ? t.aiGeminiLiveBadge : t.aiLocalEngineBadge}
+                        </span>
+                      </div>
+                    </div>
+                    <button onClick={() => setIsAICoachOpen(false)} aria-label={t.close} className="p-1 text-slate-400 hover:text-white">
+                      <Icon name="x" className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {/* Optional Gemini API Key */}
+                  <div className="p-3 rounded-xl bg-zinc-800/40 border border-zinc-700/50 space-y-2">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-slate-400 font-medium flex items-center gap-1">
+                        <Icon name="key" className="w-3.5 h-3.5 text-amber-400" />
+                        {t.apiKeyOptional}
+                      </span>
+                      <button onClick={() => setIsEditingKey(!isEditingKey)} className="text-[10px] text-amber-400 hover:underline">
+                        {isEditingKey ? t.close : (geminiApiKey ? 'تعديل' : 'إضافة')}
+                      </button>
+                    </div>
+                    {isEditingKey && (
+                      <div className="flex gap-2 pt-1">
+                        <input type="password" value={geminiApiKey} onChange={e => setGeminiApiKey(e.target.value)}
+                          placeholder="AIzaSy..."
+                          className="flex-1 p-2 rounded-lg bg-zinc-800 border border-zinc-700 text-xs text-slate-100 outline-none focus:border-amber-500" />
+                        <button onClick={() => { localStorage.setItem(LS_GEMINI_KEY, geminiApiKey); setIsEditingKey(false); showToast(t.save); }}
+                          className="px-3 py-1.5 rounded-lg bg-amber-500 text-slate-950 font-bold text-xs hover:bg-amber-400">
+                          {t.saveApiKey}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {isAiLoading ? (
+                    <div className="flex flex-col items-center justify-center py-12 text-xs text-amber-400 gap-3">
+                      <Icon name="sparkles" className="w-6 h-6 animate-spin text-amber-400" />
+                      <span>{t.aiAnalyzing}</span>
+                    </div>
+                  ) : (
+                    <div className="p-4 rounded-xl bg-indigo-950/20 border border-indigo-500/20 text-xs text-slate-200 leading-relaxed whitespace-pre-line shadow-inner">
+                      {aiCoachResponse}
+                    </div>
+                  )}
+                </div>
+
+                <button onClick={() => setIsAICoachOpen(false)}
+                  className="w-full py-2.5 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs hover:bg-amber-400 transition-all shadow-md">
+                  {t.applyCoaching}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* AUTH MODAL FOR GUESTS */}
+          <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)}
+            t={t} onLoginSuccess={handleLoginSuccess}
+            currentGuestData={{ habits, journalEntries, tasks, deals, calcForm, totalFocusMinutes }} />
+
+          {/* GLOBAL TOAST */}
+          {toast && (
+            <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-xl bg-zinc-900 border border-amber-500/40 shadow-2xl text-xs font-semibold text-slate-100 animate-fadeIn">
+              {toast}
+            </div>
+          )}
+
+          {/* FLOATING ACTION BUTTON (FAB) */}
+          <div className={`fixed bottom-6 ${isRTL ? 'left-6' : 'right-6'} z-40 flex flex-col items-end gap-2`}>
+            {isFABOpen && (
+              <div className="flex flex-col gap-2 animate-fadeIn">
+                <button onClick={() => { setIsFABOpen(false); setIsTaskModalOpen(true); }} className="px-4 py-2 rounded-xl bg-zinc-900 border border-zinc-700 text-xs font-semibold text-slate-200 hover:border-amber-500 shadow-lg flex items-center gap-2">
+                  <Icon name="grid" className="w-3.5 h-3.5 text-amber-400" />{t.addTask}
+                </button>
+                <button onClick={() => { setIsFABOpen(false); setIsJournalModalOpen(true); }} className="px-4 py-2 rounded-xl bg-zinc-900 border border-zinc-700 text-xs font-semibold text-slate-200 hover:border-amber-500 shadow-lg flex items-center gap-2">
+                  <Icon name="bookMarked" className="w-3.5 h-3.5 text-amber-400" />{t.writeJournalEntry}
+                </button>
+                <button onClick={() => goToTab('habits')} className="px-4 py-2 rounded-xl bg-zinc-900 border border-zinc-700 text-xs font-semibold text-slate-200 hover:border-amber-500 shadow-lg flex items-center gap-2">
+                  <Icon name="repeat" className="w-3.5 h-3.5 text-cyan-400" />{t.addHabit}
+                </button>
+                <button onClick={() => { setIsFABOpen(false); setIsDealModalOpen(true); }} className="px-4 py-2 rounded-xl bg-zinc-900 border border-zinc-700 text-xs font-semibold text-slate-200 hover:border-amber-500 shadow-lg flex items-center gap-2">
+                  <Icon name="kanban" className="w-3.5 h-3.5 text-rose-400" />{t.addDeal}
+                </button>
+              </div>
+            )}
+            <button onClick={() => setIsFABOpen(!isFABOpen)} aria-label={t.quickAction}
+              className="w-14 h-14 rounded-full bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-2xl flex items-center justify-center transition-all" title={t.quickAction}>
+              <Icon name={isFABOpen ? 'x' : 'plus'} className="w-6 h-6" />
+            </button>
+          </div>
+
+        </div>
+      );
+    }
+
+    const rootElement = document.getElementById('root');
+    const root = ReactDOM.createRoot(rootElement);
+    root.render(<SalesOSApp />);
+  </script>
 </body>
 </html>
